@@ -125,6 +125,7 @@ export default function AuditPage() {
       frequency: ScheduleFrequency.WEEKLY,
       hour: 9,
       minute: 0,
+      timezone: 'America/Sao_Paulo',
       enabled: false
     }
   })
@@ -237,6 +238,7 @@ export default function AuditPage() {
             frequency: ScheduleFrequency.WEEKLY,
             hour: 9,
             minute: 0,
+            timezone: 'America/Sao_Paulo',
             enabled: false
           }
         })
