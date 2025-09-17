@@ -1,0 +1,155 @@
+{
+  "version": 2,
+  "name": "sistemavng-v3",
+  "alias": ["sistemavng.com.br", "www.sistemavng.com.br"],
+  "regions": ["gru1", "iad1"],
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "installCommand": "npm ci",
+  "devCommand": "npm run dev",
+  "env": {
+    "NEXT_PUBLIC_SUPABASE_URL": "https://xzxjzbbrxapghmeqswmi.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh6eGp6YmJyeGFwZ2htZXFzd21pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4NzAzNTksImV4cCI6MjA3MzQ0NjM1OX0.qECRejpwQXvcaoUiQ974iwFK4cWenqyAG15MrFeSZos",
+    "BLING_REDIRECT_URI": "https://sistemavng.com.br/api/auth/bling/callback",
+    "NEXTAUTH_URL": "https://sistemavng.com.br",
+    "NEXT_PUBLIC_APP_NAME": "Sistema VNG",
+    "NEXT_PUBLIC_APP_VERSION": "3.0.0",
+    "NEXT_PUBLIC_APP_DESCRIPTION": "Sistema de Gestão Empresarial",
+    "NEXT_PUBLIC_ENABLE_ANALYTICS": "true",
+    "NEXT_PUBLIC_ENABLE_NOTIFICATIONS": "true",
+    "NEXT_PUBLIC_ENABLE_DARK_MODE": "true",
+    "NEXT_PUBLIC_ENABLE_BLING_INTEGRATION": "true",
+    "NEXT_PUBLIC_API_BASE_URL": "https://sistemavng.com.br/api",
+    "NEXT_PUBLIC_API_TIMEOUT": "30000",
+    "NEXT_PUBLIC_MAX_FILE_SIZE": "10485760",
+    "NEXT_PUBLIC_ALLOWED_FILE_TYPES": "pdf,doc,docx,xls,xlsx,jpg,jpeg,png,gif",
+    "NEXT_PUBLIC_ENABLE_CSP": "true",
+    "NEXT_PUBLIC_ENABLE_HTTPS_REDIRECT": "true",
+    "NODE_ENV": "production"
+  },
+  "build": {
+    "env": {
+      "NEXT_TELEMETRY_DISABLED": "1"
+    }
+  },
+  "functions": {
+    "app/api/**/*.ts": {
+      "maxDuration": 30
+    },
+    "app/api/**/*.js": {
+      "maxDuration": 30
+    }
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()"
+        }
+      ]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "https://sistemavng.com.br"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization"
+        }
+      ]
+    },
+    {
+      "source": "/static/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/admin",
+      "destination": "/dashboard",
+      "permanent": false
+    },
+    {
+      "source": "/login",
+      "destination": "/auth/signin",
+      "permanent": false
+    },
+    {
+      "source": "/register",
+      "destination": "/auth/register",
+      "permanent": false
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/health",
+      "destination": "/api/health"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/api/sitemap"
+    },
+    {
+      "source": "/robots.txt",
+      "destination": "/api/robots"
+    },
+    {
+      "source": "/api/bling/:path*",
+      "destination": "https://www.bling.com.br/Api/v3/:path*"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/backup",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/cleanup",
+      "schedule": "0 3 * * 0"
+    },
+    {
+      "path": "/api/cron/sync-bling",
+      "schedule": "*/30 * * * *"
+    }
+  ],
+  "github": {
+    "enabled": true,
+    "autoAlias": true,
+    "autoJobCancelation": true,
+    "silent": false
+  },
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "public": false
+}

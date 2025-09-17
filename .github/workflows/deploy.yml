@@ -1,0 +1,306 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  # Job de testes e validação
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run linting
+        run: npm run lint
+        
+      - name: Run type checking
+        run: npm run type-check
+        
+      - name: Run tests
+        run: npm run test
+        
+      - name: Build application
+        run: npm run build
+        env:
+          # Supabase
+          NEXT_PUBLIC_SUPABASE_URL: https://xzxjzbbrxapghmeqswmi.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh6eGp6YmJyeGFwZ2htZXFzd21pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4NzAzNTksImV4cCI6MjA3MzQ0NjM1OX0.qECRejpwQXvcaoUiQ974iwFK4cWenqyAG15MrFeSZos
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          
+          # NextAuth
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+          NEXTAUTH_URL: https://sistemavng.com.br
+          
+          # Bling API
+          BLING_CLIENT_ID: ${{ secrets.BLING_CLIENT_ID }}
+          BLING_CLIENT_SECRET: ${{ secrets.BLING_CLIENT_SECRET }}
+          BLING_REDIRECT_URI: https://sistemavng.com.br/api/auth/bling/callback
+          
+          # App Config
+          NEXT_PUBLIC_APP_NAME: "Sistema VNG"
+          NEXT_PUBLIC_APP_VERSION: "3.0.0"
+          NEXT_PUBLIC_APP_DESCRIPTION: "Sistema de Gestão Empresarial"
+          NEXT_PUBLIC_API_BASE_URL: https://sistemavng.com.br/api
+          
+          # Feature Flags
+          NEXT_PUBLIC_ENABLE_ANALYTICS: true
+          NEXT_PUBLIC_ENABLE_NOTIFICATIONS: true
+          NEXT_PUBLIC_ENABLE_DARK_MODE: true
+          NEXT_PUBLIC_ENABLE_BLING_INTEGRATION: true
+          
+          # Security
+          NEXT_PUBLIC_ENABLE_CSP: true
+          NEXT_PUBLIC_ENABLE_HTTPS_REDIRECT: true
+          
+          # Environment
+          NODE_ENV: production
+
+  # Job de análise de segurança
+  security:
+    name: Security Analysis
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # Job de deploy para preview (PRs)
+  deploy-preview:
+    name: Deploy Preview
+    runs-on: ubuntu-latest
+    needs: [test, security]
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+        
+      - name: Pull Vercel Environment Information
+        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+        
+      - name: Build Project Artifacts
+        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+        
+      - name: Deploy Project Artifacts to Vercel
+        id: deploy
+        run: |
+          url=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
+          echo "preview_url=$url" >> $GITHUB_OUTPUT
+          
+      - name: Comment PR with preview URL
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚀 **Preview Deploy Ready!**
+              
+              ✅ Preview URL: ${{ steps.deploy.outputs.preview_url }}
+              
+              📊 **Deploy Summary:**
+              - Commit: ${context.sha.substring(0, 7)}
+              - Branch: ${context.ref.replace('refs/heads/', '')}
+              - Environment: Preview
+              
+              This preview will be automatically updated with new commits.`
+            })
+
+  # Job de deploy para produção
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [test, security]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    environment:
+      name: production
+      url: https://sistemavng.com.br
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+        
+      - name: Pull Vercel Environment Information
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        
+      - name: Build Project Artifacts
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        
+      - name: Deploy Project Artifacts to Vercel
+        id: deploy
+        run: |
+          url=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
+          echo "production_url=$url" >> $GITHUB_OUTPUT
+          
+      - name: Run post-deploy health checks
+        run: |
+          echo "Aguardando deploy ser propagado..."
+          sleep 30
+          
+          # Verificar se o site está respondendo
+          curl -f -s -o /dev/null https://sistemavng.com.br || exit 1
+          echo "✅ Site está respondendo"
+          
+          # Verificar SSL
+          curl -f -s -I https://sistemavng.com.br | grep -i "strict-transport-security" || echo "⚠️ HSTS header não encontrado"
+          
+          # Verificar redirecionamento HTTP -> HTTPS
+          curl -s -I http://sistemavng.com.br | grep -i "location: https://" || echo "⚠️ Redirecionamento HTTPS não configurado"
+          
+      - name: Notify deployment success
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: 'success',
+              target_url: '${{ steps.deploy.outputs.production_url }}',
+              description: 'Deploy realizado com sucesso',
+              context: 'vercel/deployment'
+            })
+
+  # Job de monitoramento pós-deploy
+  post-deploy-monitoring:
+    name: Post-Deploy Monitoring
+    runs-on: ubuntu-latest
+    needs: deploy-production
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup monitoring
+        run: |
+          # Aguardar propagação do deploy
+          sleep 60
+          
+          # Executar testes de fumaça
+          echo "🔍 Executando testes de fumaça..."
+          
+          # Verificar página inicial
+          if curl -f -s https://sistemavng.com.br > /dev/null; then
+            echo "✅ Página inicial carregando"
+          else
+            echo "❌ Erro na página inicial"
+            exit 1
+          fi
+          
+          # Verificar API health
+          if curl -f -s https://sistemavng.com.br/api/health > /dev/null; then
+            echo "✅ API health check passou"
+          else
+            echo "⚠️ API health check falhou"
+          fi
+          
+          # Verificar performance básica
+          response_time=$(curl -o /dev/null -s -w '%{time_total}' https://sistemavng.com.br)
+          if (( $(echo "$response_time < 3.0" | bc -l) )); then
+            echo "✅ Tempo de resposta OK: ${response_time}s"
+          else
+            echo "⚠️ Tempo de resposta lento: ${response_time}s"
+          fi
+          
+      - name: Create deployment issue on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🚨 Falha no Deploy de Produção',
+              body: `**Deploy falhou para o commit:** ${context.sha}
+              
+              **Branch:** ${context.ref.replace('refs/heads/', '')}
+              **Workflow:** ${context.workflow}
+              **Run ID:** ${context.runId}
+              
+              **Ações necessárias:**
+              - [ ] Verificar logs do workflow
+              - [ ] Verificar status do Vercel
+              - [ ] Executar rollback se necessário
+              - [ ] Investigar causa raiz
+              
+              **Links úteis:**
+              - [Workflow Run](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})
+              - [Vercel Dashboard](https://vercel.com/dashboard)
+              - [Status Page](https://sistemavng.com.br)`,
+              labels: ['bug', 'deployment', 'high-priority']
+            })
+
+  # Job de limpeza e otimização
+  cleanup:
+    name: Cleanup and Optimization
+    runs-on: ubuntu-latest
+    needs: [deploy-production, post-deploy-monitoring]
+    if: always() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    
+    steps:
+      - name: Cleanup old deployments
+        run: |
+          echo "🧹 Limpeza de deployments antigos seria executada aqui"
+          echo "Mantendo apenas os últimos 10 deployments por ambiente"
+          
+      - name: Update deployment metrics
+        run: |
+          echo "📊 Atualizando métricas de deployment"
+          echo "Deploy realizado em: $(date)"
+          echo "Commit: ${{ github.sha }}"
+          echo "Branch: ${{ github.ref_name }}"
