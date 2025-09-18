@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { 
   Users, 
   Plus, 
@@ -92,6 +93,8 @@ export default function UsersPage() {
     try {
       setLoading(true)
       
+      if (!currentUser) return
+      
       const params: UserSearchParams = {
         filters: {
           ...filters,
@@ -103,13 +106,14 @@ export default function UsersPage() {
         sort_direction: 'asc'
       }
 
-      const response = await rbacService.getUsers(params)
+      const response = await rbacService.getUsers(params, currentUser.company_id)
       
       setUsers(response.users)
       setTotalPages(response.total_pages)
       setTotalUsers(response.total)
     } catch (error) {
       console.error('Erro ao carregar usuários:', error)
+      toast.error(`Erro ao carregar usuários: ${error instanceof Error ? error.message : String(error)}`)
     } finally {
       setLoading(false)
     }
@@ -123,6 +127,7 @@ export default function UsersPage() {
       setDepartments(depts)
     } catch (error) {
       console.error('Erro ao carregar departamentos:', error)
+      toast.error(`Erro ao carregar departamentos: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -134,6 +139,7 @@ export default function UsersPage() {
       setManagers(mgrs)
     } catch (error) {
       console.error('Erro ao carregar gerentes:', error)
+      toast.error(`Erro ao carregar gerentes: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -168,6 +174,9 @@ export default function UsersPage() {
       loadStats()
     } catch (error) {
       console.error('Erro ao criar usuário:', error)
+      toast.error(`Erro ao criar usuário: ${error instanceof Error ? error.message : String(error)}`)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -182,6 +191,9 @@ export default function UsersPage() {
       loadStats()
     } catch (error) {
       console.error('Erro ao atualizar usuário:', error)
+      toast.error(`Erro ao atualizar usuário: ${error instanceof Error ? error.message : String(error)}`)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -194,6 +206,7 @@ export default function UsersPage() {
       loadStats()
     } catch (error) {
       console.error('Erro ao desativar usuário:', error)
+      toast.error(`Erro ao desativar usuário: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -206,6 +219,7 @@ export default function UsersPage() {
       loadStats()
     } catch (error) {
       console.error('Erro ao excluir usuário:', error)
+      toast.error(`Erro ao excluir usuário: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 

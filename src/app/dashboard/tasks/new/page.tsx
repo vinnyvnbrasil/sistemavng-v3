@@ -189,11 +189,15 @@ export default function NewTaskPage() {
 
       // Preparar dados da tarefa
       const taskData: CreateTaskData = {
-        ...formData,
+        title: formData.title,
+        description: formData.description,
+        priority: formData.priority,
+        project_id: formData.project_id || '',
+        status: formData.status,
         estimated_hours: formData.estimated_hours || undefined,
         due_date: formData.due_date || undefined,
-        project_id: formData.project_id || undefined,
-        assigned_to: formData.assigned_to || undefined
+        assigned_to: formData.assigned_to || undefined,
+        tags: formData.tags
       }
 
       // Criar tarefa

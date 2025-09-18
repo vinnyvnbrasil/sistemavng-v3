@@ -72,6 +72,7 @@ export interface UpdateTaskData {
   description?: string
   status?: TaskStatus
   priority?: TaskPriority
+  project_id?: string
   assigned_to?: string
   due_date?: string
   start_date?: string

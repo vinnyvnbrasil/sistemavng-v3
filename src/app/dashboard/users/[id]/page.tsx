@@ -56,7 +56,7 @@ import { UserService } from '@/lib/services/users'
 export default function UserDetailsPage() {
   const router = useRouter()
   const params = useParams()
-  const userId = params.id as string
+  const userId = params?.id as string
   
   const [user, setUser] = useState<UserType | null>(null)
   const [activities, setActivities] = useState<UserActivity[]>([])
@@ -74,7 +74,7 @@ export default function UserDetailsPage() {
   const loadUser = async () => {
     try {
       setLoading(true)
-      const userData = await UserService.getUserById(userId)
+      const userData = await UserService.getUser(userId)
       setUser(userData)
     } catch (error: any) {
       console.error('Erro ao carregar usuário:', error)
@@ -86,12 +86,15 @@ export default function UserDetailsPage() {
   }
 
   const loadActivities = async () => {
+    if (!userId) return
+    
+    setActivitiesLoading(true)
     try {
-      setActivitiesLoading(true)
-      const activitiesData = await UserService.getUserActivities(userId, 1, 20)
-      setActivities(activitiesData.activities)
-    } catch (error: any) {
+      const userActivities = await UserService.getUserActivities({ user_id: userId }, 1, 20)
+      setActivities(userActivities)
+    } catch (error) {
       console.error('Erro ao carregar atividades:', error)
+      toast.error('Erro ao carregar atividades do usuário')
     } finally {
       setActivitiesLoading(false)
     }
@@ -473,11 +476,11 @@ export default function UserDetailsPage() {
                       {activities.map((activity) => (
                         <div key={activity.id} className="flex items-start gap-3 p-3 rounded-lg border">
                           <div className="flex-shrink-0 mt-1">
-                            {getActivityIcon(activity.type)}
+                            {getActivityIcon(activity.action)}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-gray-900">
-                              {activity.description}
+                              {activity.details?.description || activity.action}
                             </p>
                             <div className="flex items-center gap-2 mt-1">
                               <Clock className="h-3 w-3 text-gray-400" />
@@ -485,10 +488,10 @@ export default function UserDetailsPage() {
                                 {formatDate(activity.created_at)}
                               </p>
                             </div>
-                            {activity.metadata && (
+                            {activity.details && (
                               <div className="mt-2">
                                 <pre className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
-                                  {JSON.stringify(activity.metadata, null, 2)}
+                                  {JSON.stringify(activity.details, null, 2)}
                                 </pre>
                               </div>
                             )}
@@ -524,9 +527,7 @@ export default function UserDetailsPage() {
                     <div>
                       <p className="text-sm font-medium text-gray-900">Idioma</p>
                       <p className="text-sm text-gray-600">
-                        {user.language === 'pt-BR' ? 'Português (Brasil)' :
-                         user.language === 'en-US' ? 'English (US)' :
-                         user.language === 'es-ES' ? 'Español' : user.language}
+                        Português (Brasil)
                       </p>
                     </div>
                     

@@ -175,7 +175,7 @@ export default function SecurityPage() {
       
     } catch (error) {
       console.error('Error loading security data:', error)
-      toast.error('Erro ao carregar dados de segurança')
+      toast.error(`Erro ao carregar dados de segurança: ${error instanceof Error ? error.message : String(error)}`)
     } finally {
       setLoading(false)
     }
@@ -195,7 +195,7 @@ export default function SecurityPage() {
       }
     } catch (error) {
       console.error('Error setting up 2FA:', error)
-      toast.error('Erro ao configurar 2FA')
+      toast.error(`Erro ao configurar 2FA: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -217,7 +217,7 @@ export default function SecurityPage() {
       }
     } catch (error) {
       console.error('Error enabling 2FA:', error)
-      toast.error('Erro ao habilitar 2FA')
+      toast.error(`Erro ao habilitar 2FA: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -237,7 +237,7 @@ export default function SecurityPage() {
       }
     } catch (error) {
       console.error('Error disabling 2FA:', error)
-      toast.error('Erro ao desabilitar 2FA')
+      toast.error(`Erro ao desabilitar 2FA: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 

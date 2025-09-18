@@ -328,9 +328,9 @@ export const ALLOWED_FILE_TYPES = [
 // Helper functions
 export const getFileCategory = (extension: string): keyof typeof FILE_CATEGORIES => {
   const ext = extension.toLowerCase().replace('.', '')
-  for (const [category, extensions] of Object.entries(FILE_CATEGORIES)) {
+  for (const [category, extensions] of Object.entries(FILE_CATEGORIES) as [keyof typeof FILE_CATEGORIES, readonly string[]][]) {
     if (extensions.includes(ext)) {
-      return category as keyof typeof FILE_CATEGORIES
+      return category
     }
   }
   return 'other'

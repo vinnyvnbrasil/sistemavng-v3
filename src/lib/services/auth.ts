@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { authenticator } from 'otplib'
-import QRCode from 'qrcode'
-import crypto from 'crypto'
+import * as QRCode from 'qrcode'
+import * as crypto from 'crypto'
 import {
   User,
   TwoFactorAuth,
@@ -295,7 +295,7 @@ export class AuthService {
         {
           description: `Usuário registrado: ${email}`,
           entityName: 'user',
-          details: {
+          metadata: {
             email,
             full_name,
             registration_method: 'email'
@@ -818,7 +818,7 @@ export class AuthService {
       if (error) {
         return {
           success: false,
-          message: error.message
+          message: error instanceof Error ? error.message : String(error)
         }
       }
 
@@ -881,7 +881,7 @@ export class AuthService {
       if (error) {
         return {
           success: false,
-          message: error.message
+          message: error instanceof Error ? error.message : String(error)
         }
       }
 
@@ -906,7 +906,7 @@ export class AuthService {
       if (error) {
         return {
           success: false,
-          message: error.message
+          message: error instanceof Error ? error.message : String(error)
         }
       }
 
@@ -1324,7 +1324,7 @@ export class AuthService {
       const isValid = twoFactorData.backup_codes.includes(code)
       if (isValid) {
         // Remove used backup code
-        const updatedCodes = twoFactorData.backup_codes.filter(c => c !== code)
+        const updatedCodes = twoFactorData.backup_codes.filter((c: string) => c !== code)
         await supabase
           .from('two_factor_auth')
           .update({ backup_codes: updatedCodes })

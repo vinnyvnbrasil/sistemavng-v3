@@ -91,6 +91,7 @@ const categoryIcons = {
   [AuditCategory.DATA_MODIFICATION]: Database,
   [AuditCategory.SYSTEM_ADMINISTRATION]: Settings,
   [AuditCategory.SECURITY]: AlertTriangle,
+  [AuditCategory.COMPLIANCE]: CheckCircle,
   [AuditCategory.PERFORMANCE]: Zap
 }
 
@@ -763,7 +764,7 @@ export default function AuditPage() {
                         <SelectContent>
                           <SelectItem value={ReportFormat.PDF}>PDF</SelectItem>
                           <SelectItem value={ReportFormat.CSV}>CSV</SelectItem>
-                          <SelectItem value={ReportFormat.XLSX}>Excel</SelectItem>
+                          <SelectItem value={ReportFormat.EXCEL}>Excel</SelectItem>
                           <SelectItem value={ReportFormat.JSON}>JSON</SelectItem>
                         </SelectContent>
                       </Select>

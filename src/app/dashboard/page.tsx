@@ -311,7 +311,7 @@ export default function DashboardPage() {
                         {project.name}
                       </h4>
                       <p className="text-sm text-gray-600">
-                        {project.companies?.name}
+                        {(project as any).companies?.name || 'Sem empresa'}
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
@@ -366,7 +366,7 @@ export default function DashboardPage() {
                         {task.title}
                       </h4>
                       <p className="text-sm text-gray-600">
-                        {task.projects?.name}
+                        {(task as any).projects?.name || 'Sem projeto'}
                       </p>
                       {task.due_date && (
                         <div className="flex items-center text-sm text-gray-500 mt-1">

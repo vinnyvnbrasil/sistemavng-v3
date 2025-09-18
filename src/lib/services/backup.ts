@@ -33,6 +33,8 @@ import {
   ScheduleHealth,
   HealthStatus,
   ConnectionStatus,
+  IssueType,
+  IssueSeverity,
   validateBackupSettings,
   validateRetentionPolicy,
   formatBackupSize,
@@ -263,10 +265,10 @@ export class BackupService {
 
       // Log activity
       await ActivityService.logActivity(
-        'create',
+        'file_uploaded',
         `Backup "${data.name}" foi iniciado`,
         userId,
-        'backup',
+        'system',
         formattedBackup.id,
         {
           entityName: data.name,
@@ -333,10 +335,10 @@ export class BackupService {
 
       // Log activity
       await ActivityService.logActivity(
-        'delete',
+        'file_deleted',
         `Backup "${backup.name}" foi excluído`,
         backup.created_by,
-        'backup',
+        'system',
         id,
         {
           entityName: backup.name,
@@ -430,10 +432,10 @@ export class BackupService {
 
       // Log activity
       await ActivityService.logActivity(
-        'create',
+        'task_created',
         `Agendamento de backup "${data.name}" foi criado`,
         userId,
-        'backup_schedule',
+        'system',
         formattedSchedule.id,
         {
           entityName: data.name,
@@ -598,10 +600,10 @@ export class BackupService {
 
       // Log activity
       await ActivityService.logActivity(
-        'create',
+        'task_created',
         `Restauração "${data.name}" foi iniciada`,
         userId,
-        'restore_job',
+        'system',
         formattedJob.id,
         {
           entityName: data.name,
@@ -681,8 +683,23 @@ export class BackupService {
         average_backup_time: Math.round(averageBackupTime),
         last_backup_date: latestBackup?.completed_at,
         next_scheduled_backup: nextSchedule?.next_run_at,
-        storage_usage_by_provider: {},
-        backup_frequency_stats: {},
+        storage_usage_by_provider: {
+          local: 0,
+          aws_s3: 0,
+          google_cloud: 0,
+          azure_blob: 0,
+          dropbox: 0,
+          ftp: 0,
+          sftp: 0
+        } as Record<StorageProvider, number>,
+        backup_frequency_stats: {
+          manual: 0,
+          hourly: 0,
+          daily: 0,
+          weekly: 0,
+          monthly: 0,
+          custom: 0
+        } as Record<BackupFrequency, number>,
         retention_savings: totalSize - compressedSize,
         compression_savings: totalSize > 0 ? Math.round(((totalSize - compressedSize) / totalSize) * 100) : 0,
         oldest_backup_date: undefined,
@@ -793,7 +810,7 @@ export class BackupService {
         schedule_id: schedule.id,
         schedule_name: schedule.name,
         status: schedule.is_enabled ? HealthStatus.HEALTHY : HealthStatus.WARNING,
-        last_run_status: schedule.last_backup_status || BackupStatus.PENDING,
+        last_run_status: BackupStatus.PENDING,
         next_run_at: schedule.next_run_at,
         consecutive_failures: schedule.failure_count,
         is_overdue: schedule.next_run_at ? new Date(schedule.next_run_at) < new Date() : false
@@ -805,8 +822,8 @@ export class BackupService {
       if (daysSinceLastBackup > 7) {
         issues.push({
           id: 'no_recent_backup',
-          type: 'backup' as const,
-          severity: 'critical' as const,
+          type: 'backup' as IssueType,
+          severity: 'critical' as IssueSeverity,
           title: 'Nenhum backup recente',
           description: `Último backup foi há ${daysSinceLastBackup} dias`,
           affected_component: 'backup_system',

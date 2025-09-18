@@ -29,7 +29,6 @@ import { ActivityService } from './activities'
 export class ApiClient {
   private config: ApiClientConfig
   private supabase: any
-  private activityService: ActivityService
   private cache: Map<string, { data: any; timestamp: number; ttl: number }>
   private rateLimits: Map<string, { count: number; resetTime: number }>
   private requestQueue: Map<RequestPriority, Array<() => Promise<any>>>
@@ -37,10 +36,10 @@ export class ApiClient {
 
   constructor(config: ApiClientConfig) {
     this.config = {
-      timeout: API_CONSTANTS.DEFAULT_TIMEOUT,
-      retries: API_CONSTANTS.MAX_RETRIES,
-      retryDelay: API_CONSTANTS.RETRY_DELAY,
-      ...config
+      ...config,
+      timeout: config.timeout || API_CONSTANTS.DEFAULT_TIMEOUT,
+      retries: config.retries || API_CONSTANTS.MAX_RETRIES,
+      retryDelay: config.retryDelay || API_CONSTANTS.RETRY_DELAY
     }
     
     this.supabase = createClient(
@@ -157,7 +156,7 @@ export class ApiClient {
       })
       
       // Make request with retries
-      const response = await this.makeRequestWithRetries({
+      const response = await this.makeRequestWithRetries<T>({
         ...config,
         url: fullUrl,
         headers
@@ -278,13 +277,13 @@ export class ApiClient {
           const deleteId = this.extractIdFromUrl(url)
           const { error: deleteError } = await query.delete().eq('id', deleteId)
           if (deleteError) throw deleteError
-          return createApiResponse(true, null, 'Deleted successfully')
+          return createApiResponse<T>(true, null as T, 'Deleted successfully')
           
         default:
           throw new Error(`Unsupported method: ${method}`)
       }
     } catch (error: any) {
-      throw new Error(error.message || 'Database operation failed')
+      throw new Error((error instanceof Error ? error.message : String(error)) || 'Database operation failed')
     }
   }
 
@@ -633,7 +632,7 @@ export class ApiClient {
       throw new Error(`File size exceeds maximum allowed size of ${API_CONSTANTS.MAX_FILE_SIZE} bytes`)
     }
     
-    if (!API_CONSTANTS.ALLOWED_FILE_TYPES.includes(file.type)) {
+    if (!API_CONSTANTS.ALLOWED_FILE_TYPES.includes(file.type as any)) {
       throw new Error(`File type ${file.type} is not allowed`)
     }
   }
@@ -661,7 +660,7 @@ export class ApiClient {
       return {
         name: 'database',
         status: 'unhealthy',
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       }
     }
   }
@@ -679,7 +678,7 @@ export class ApiClient {
       return {
         name: 'storage',
         status: 'unhealthy',
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       }
     }
   }
@@ -706,12 +705,17 @@ export class ApiClient {
   private async logActivity(type: string, data: any): Promise<void> {
     try {
       await ActivityService.createActivity({
-        type,
+        type: type as any,
+        title: `API ${type}`,
         description: `API ${type}`,
-        metadata: data,
         user_id: 'system',
-        ip_address: '127.0.0.1',
-        user_agent: 'API Client'
+        entity_type: 'system',
+        entity_id: 'api-client',
+        metadata: {
+          ...data,
+          ip_address: '127.0.0.1',
+          user_agent: 'API Client'
+        }
       })
     } catch (error) {
       console.error('Failed to log activity:', error)

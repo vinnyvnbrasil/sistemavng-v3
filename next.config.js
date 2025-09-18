@@ -109,7 +109,7 @@ const nextConfig = {
 
   // Configurações experimentais
   experimental: {
-    optimizeCss: true,
+    optimizeCss: false, // Desabilitar temporariamente para evitar erro do critters
     optimizePackageImports: [
       'lucide-react',
       '@radix-ui/react-dialog',
@@ -117,6 +117,7 @@ const nextConfig = {
       '@radix-ui/react-select',
       '@radix-ui/react-toast',
     ],
+    typedRoutes: false,
   },
 
   // Configurações de pacotes externos do servidor
@@ -130,8 +131,49 @@ const nextConfig = {
   // Configurações de output
   output: 'standalone',
   
-  // Configurações de bundle
+  // Configurações de TypeScript
+  typescript: {
+    ignoreBuildErrors: false,
+  },
+
+  // Configurações de ESLint
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+
+  // Configurações de webpack para excluir funções Supabase
   webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
+    // Excluir funções Supabase do build
+    config.externals = config.externals || []
+    config.externals.push({
+      'supabase/functions': 'commonjs supabase/functions'
+    })
+
+    // Ignorar páginas antigas do Pages Router durante o build
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@/pages': false,
+    }
+
+    // Configurar fallbacks para APIs do Node.js no Edge Runtime
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+        crypto: false,
+        stream: false,
+        url: false,
+        zlib: false,
+        http: false,
+        https: false,
+        assert: false,
+        os: false,
+        path: false,
+      }
+    }
+
     // Otimizações para produção
     if (!dev && !isServer) {
       config.optimization.splitChunks = {
@@ -158,24 +200,6 @@ const nextConfig = {
     }
 
     return config
-  },
-
-  // Configurações de ambiente
-  env: {
-    CUSTOM_KEY: process.env.CUSTOM_KEY,
-    DOMAIN: process.env.NODE_ENV === 'production' 
-      ? 'https://sistemavng.com.br' 
-      : 'http://localhost:3000',
-  },
-
-  // Configurações de TypeScript
-  typescript: {
-    ignoreBuildErrors: false,
-  },
-
-  // Configurações de ESLint
-  eslint: {
-    ignoreDuringBuilds: true,
   },
 
   // Configurações de PWA (opcional)

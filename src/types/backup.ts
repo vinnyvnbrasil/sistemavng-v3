@@ -30,6 +30,13 @@ export interface Backup {
   is_automated: boolean
   error_message?: string
   progress_percentage?: number
+  // Computed/related fields
+  creator_name?: string
+  creator_avatar?: string
+  schedule_name?: string
+  formatted_size?: string
+  is_expired?: boolean
+  compression_ratio?: number
 }
 
 export interface BackupSchedule {
@@ -99,6 +106,13 @@ export interface RestoreJob {
   verification_status?: VerificationStatus
   rollback_available: boolean
   rollback_backup_id?: string
+  // Computed/related fields
+  backup_name?: string
+  backup_type?: BackupType
+  backup_size?: number
+  creator_name?: string
+  creator_avatar?: string
+  formatted_duration?: string
 }
 
 export interface RestoreSettings {

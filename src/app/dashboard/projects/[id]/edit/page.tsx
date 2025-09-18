@@ -38,7 +38,12 @@ const priorityOptions = [
 export default function EditProjectPage() {
   const router = useRouter()
   const params = useParams()
-  const projectId = params.id as string
+  const projectId = params?.id as string
+
+  if (!projectId) {
+    router.push('/dashboard/projects')
+    return null
+  }
 
   const [project, setProject] = useState<Project | null>(null)
   const [loading, setLoading] = useState(true)
@@ -141,15 +146,15 @@ export default function EditProjectPage() {
       
       const updateData: UpdateProjectData = {
         name: formData.name.trim(),
-        description: formData.description.trim() || null,
+        description: formData.description.trim() || undefined,
         status: formData.status,
         priority: formData.priority,
-        start_date: formData.start_date || null,
-        end_date: formData.end_date || null,
-        deadline: formData.deadline || null,
-        budget: formData.budget ? parseFloat(formData.budget) : null,
+        start_date: formData.start_date || undefined,
+        end_date: formData.end_date || undefined,
+        deadline: formData.deadline || undefined,
+        budget: formData.budget ? parseFloat(formData.budget) : undefined,
         progress: formData.progress,
-        tags: formData.tags.length > 0 ? formData.tags : null
+        tags: formData.tags.length > 0 ? formData.tags : undefined
       }
 
       await ProjectService.updateProject(projectId, updateData)

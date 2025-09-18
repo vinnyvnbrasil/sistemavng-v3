@@ -82,9 +82,9 @@ export class UserService {
         limit,
         has_more: (count || 0) > page * limit
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Erro ao buscar usuários:', error)
-      throw new Error(error.message || 'Erro ao buscar usuários')
+      throw new Error(`Erro ao buscar usuários: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -103,9 +103,9 @@ export class UserService {
       if (!data) throw new Error('Usuário não encontrado')
 
       return data
-    } catch (error: any) {
+    } catch (error) {
       console.error('Erro ao buscar usuário:', error)
-      throw new Error(error.message || 'Erro ao buscar usuário')
+      throw new Error(`Erro ao buscar usuário: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -144,9 +144,9 @@ export class UserService {
 
       // Buscar usuário completo
       return await this.getUser(authData.user.id)
-    } catch (error: any) {
+    } catch (error) {
       console.error('Erro ao criar usuário:', error)
-      throw new Error(error.message || 'Erro ao criar usuário')
+      throw new Error(`Erro ao criar usuário: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -191,9 +191,9 @@ export class UserService {
       })
 
       return await this.getUser(userId)
-    } catch (error: any) {
+    } catch (error) {
       console.error('Erro ao atualizar usuário:', error)
-      throw new Error(error.message || 'Erro ao atualizar usuário')
+      throw new Error(`Erro ao atualizar usuário: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -212,9 +212,9 @@ export class UserService {
 
       // Registrar atividade
       await this.logUserActivity(userId, 'user_deactivated', 'user', userId)
-    } catch (error: any) {
+    } catch (error) {
       console.error('Erro ao desativar usuário:', error)
-      throw new Error(error.message || 'Erro ao desativar usuário')
+      throw new Error(`Erro ao desativar usuário: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -231,9 +231,9 @@ export class UserService {
       if (!data) throw new Error('Perfil não encontrado')
 
       return data
-    } catch (error: any) {
+    } catch (error) {
       console.error('Erro ao buscar perfil:', error)
-      throw new Error(error.message || 'Erro ao buscar perfil')
+      throw new Error(`Erro ao buscar perfil: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -257,9 +257,9 @@ export class UserService {
       })
 
       return data
-    } catch (error: any) {
+    } catch (error) {
       console.error('Erro ao atualizar perfil:', error)
-      throw new Error(error.message || 'Erro ao atualizar perfil')
+      throw new Error(`Erro ao atualizar perfil: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -307,9 +307,9 @@ export class UserService {
         limit,
         has_more: (count || 0) > page * limit
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Erro ao buscar equipes:', error)
-      throw new Error(error.message || 'Erro ao buscar equipes')
+      throw new Error((error instanceof Error ? error.message : String(error)) || 'Erro ao buscar equipes')
     }
   }
 
@@ -334,7 +334,7 @@ export class UserService {
       return data
     } catch (error: any) {
       console.error('Erro ao buscar equipe:', error)
-      throw new Error(error.message || 'Erro ao buscar equipe')
+      throw new Error((error instanceof Error ? error.message : String(error)) || 'Erro ao buscar equipe')
     }
   }
 
@@ -360,7 +360,7 @@ export class UserService {
       return data
     } catch (error: any) {
       console.error('Erro ao criar equipe:', error)
-      throw new Error(error.message || 'Erro ao criar equipe')
+      throw new Error((error instanceof Error ? error.message : String(error)) || 'Erro ao criar equipe')
     }
   }
 
@@ -386,7 +386,7 @@ export class UserService {
       return data
     } catch (error: any) {
       console.error('Erro ao atualizar equipe:', error)
-      throw new Error(error.message || 'Erro ao atualizar equipe')
+      throw new Error((error instanceof Error ? error.message : String(error)) || 'Erro ao atualizar equipe')
     }
   }
 
@@ -407,7 +407,7 @@ export class UserService {
       await this.logUserActivity(deletedBy, 'team_deactivated', 'team', teamId)
     } catch (error: any) {
       console.error('Erro ao desativar equipe:', error)
-      throw new Error(error.message || 'Erro ao desativar equipe')
+      throw new Error((error instanceof Error ? error.message : String(error)) || 'Erro ao desativar equipe')
     }
   }
 
@@ -429,7 +429,7 @@ export class UserService {
       return data || []
     } catch (error: any) {
       console.error('Erro ao buscar membros da equipe:', error)
-      throw new Error(error.message || 'Erro ao buscar membros da equipe')
+      throw new Error((error instanceof Error ? error.message : String(error)) || 'Erro ao buscar membros da equipe')
     }
   }
 
@@ -477,7 +477,7 @@ export class UserService {
       return data
     } catch (error: any) {
       console.error('Erro ao adicionar membro à equipe:', error)
-      throw new Error(error.message || 'Erro ao adicionar membro à equipe')
+      throw new Error((error instanceof Error ? error.message : String(error)) || 'Erro ao adicionar membro à equipe')
     }
   }
 
@@ -503,7 +503,7 @@ export class UserService {
       })
     } catch (error: any) {
       console.error('Erro ao remover membro da equipe:', error)
-      throw new Error(error.message || 'Erro ao remover membro da equipe')
+      throw new Error((error instanceof Error ? error.message : String(error)) || 'Erro ao remover membro da equipe')
     }
   }
 
@@ -534,7 +534,7 @@ export class UserService {
       return data
     } catch (error: any) {
       console.error('Erro ao atualizar papel do membro:', error)
-      throw new Error(error.message || 'Erro ao atualizar papel do membro')
+      throw new Error((error instanceof Error ? error.message : String(error)) || 'Erro ao atualizar papel do membro')
     }
   }
 
@@ -572,7 +572,7 @@ export class UserService {
       return data
     } catch (error: any) {
       console.error('Erro ao criar convite:', error)
-      throw new Error(error.message || 'Erro ao criar convite')
+      throw new Error((error instanceof Error ? error.message : String(error)) || 'Erro ao criar convite')
     }
   }
 
@@ -620,7 +620,7 @@ export class UserService {
       }
     } catch (error: any) {
       console.error('Erro ao responder convite:', error)
-      throw new Error(error.message || 'Erro ao responder convite')
+      throw new Error((error instanceof Error ? error.message : String(error)) || 'Erro ao responder convite')
     }
   }
 
@@ -669,7 +669,7 @@ export class UserService {
       return data || []
     } catch (error: any) {
       console.error('Erro ao buscar atividades:', error)
-      throw new Error(error.message || 'Erro ao buscar atividades')
+      throw new Error((error instanceof Error ? error.message : String(error)) || 'Erro ao buscar atividades')
     }
   }
 
@@ -738,10 +738,10 @@ export class UserService {
       ).length || 0
 
       // TODO: Implementar estatísticas de login
-      const loginActivity = []
+      const loginActivity: any[] = []
 
       // TODO: Implementar agrupamento por departamento
-      const usersByDepartment = {}
+      const usersByDepartment: any = {}
 
       return {
         total_users: totalUsers,
@@ -754,7 +754,7 @@ export class UserService {
       }
     } catch (error: any) {
       console.error('Erro ao buscar estatísticas de usuários:', error)
-      throw new Error(error.message || 'Erro ao buscar estatísticas de usuários')
+      throw new Error((error instanceof Error ? error.message : String(error)) || 'Erro ao buscar estatísticas de usuários')
     }
   }
 
@@ -788,7 +788,7 @@ export class UserService {
       }, teams[0]) || null
 
       // TODO: Implementar crescimento de equipes
-      const teamGrowth = []
+      const teamGrowth: any[] = []
 
       return {
         total_teams: totalTeams,
@@ -803,7 +803,7 @@ export class UserService {
       }
     } catch (error: any) {
       console.error('Erro ao buscar estatísticas de equipes:', error)
-      throw new Error(error.message || 'Erro ao buscar estatísticas de equipes')
+      throw new Error((error instanceof Error ? error.message : String(error)) || 'Erro ao buscar estatísticas de equipes')
     }
   }
 
@@ -828,7 +828,7 @@ export class UserService {
   }
 
   // Busca de usuários para seleção
-  static async searchUsers(query: string, limit = 10): Promise<User[]> {
+  static async searchUsers(query: string, limit = 10): Promise<any[]> {
     try {
       const { data, error } = await supabase
         .from('users')
@@ -843,12 +843,12 @@ export class UserService {
       return data || []
     } catch (error: any) {
       console.error('Erro ao buscar usuários:', error)
-      throw new Error(error.message || 'Erro ao buscar usuários')
+      throw new Error((error instanceof Error ? error.message : String(error)) || 'Erro ao buscar usuários')
     }
   }
 
   // Busca de equipes para seleção
-  static async searchTeams(query: string, limit = 10): Promise<Team[]> {
+  static async searchTeams(query: string, limit = 10): Promise<any[]> {
     try {
       const { data, error } = await supabase
         .from('teams')
@@ -863,7 +863,7 @@ export class UserService {
       return data || []
     } catch (error: any) {
       console.error('Erro ao buscar equipes:', error)
-      throw new Error(error.message || 'Erro ao buscar equipes')
+      throw new Error((error instanceof Error ? error.message : String(error)) || 'Erro ao buscar equipes')
     }
   }
 }

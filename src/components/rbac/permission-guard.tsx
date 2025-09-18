@@ -3,9 +3,9 @@
 // Componente de Proteção por Permissões
 // Controla a exibição de elementos baseado nas permissões do usuário
 
-import { ReactNode } from 'react'
+import React, { ReactNode } from 'react'
 import { useAuth } from '@/hooks/use-auth'
-import { Permission, Role } from '@/types/rbac'
+import { Permission, UserRole } from '@/types/rbac'
 
 interface PermissionGuardProps {
   permission: Permission
@@ -61,17 +61,17 @@ export function MultiPermissionGuard({
 
 // Componente para proteção baseada em roles
 interface RoleGuardProps {
-  roles: Role[]
+  roles: UserRole[]
   children: ReactNode
   fallback?: ReactNode
   requireAll?: boolean
 }
 
-export function RoleGuard({ 
-  roles, 
-  children, 
+export function RoleGuard({
+  roles,
+  children,
   fallback = null,
-  requireAll = false 
+  requireAll = false
 }: RoleGuardProps) {
   const { hasRole } = useAuth()
 
@@ -102,7 +102,7 @@ export function useMultiPermissionGuard(permissions: Permission[], requireAll = 
 }
 
 // Hook para verificar roles
-export function useRoleGuard(roles: Role[], requireAll = false) {
+export function useRoleGuard(roles: UserRole[], requireAll = false) {
   const { hasRole } = useAuth()
   
   return requireAll
@@ -113,7 +113,7 @@ export function useRoleGuard(roles: Role[], requireAll = false) {
 // Componente para proteger rotas inteiras
 interface RouteGuardProps {
   permissions?: Permission[]
-  roles?: Role[]
+  roles?: UserRole[]
   children: ReactNode
   requireAll?: boolean
   fallback?: ReactNode
@@ -185,7 +185,7 @@ export function RouteGuard({
 
 // Componente para conteúdo baseado em role
 interface RoleBasedContentProps {
-  role: Role
+  role: UserRole
   children: ReactNode
   fallback?: ReactNode
 }
@@ -238,7 +238,7 @@ export function withPermissions<T extends object>(
 // HOC para proteger componentes com roles
 export function withRole<T extends object>(
   Component: React.ComponentType<T>,
-  roles: Role[],
+  roles: UserRole[],
   requireAll = false,
   fallback?: ReactNode
 ) {

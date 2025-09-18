@@ -214,10 +214,11 @@ export class ActivityService {
       const userActivityMap = new Map()
       mostActiveUsers?.forEach(activity => {
         const userId = activity.user_id
+        const user = Array.isArray(activity.user) ? activity.user[0] : activity.user
         const current = userActivityMap.get(userId) || {
           user_id: userId,
-          user_name: activity.user?.full_name || 'Usuário Desconhecido',
-          user_avatar: activity.user?.avatar_url,
+          user_name: user?.full_name || 'Usuário Desconhecido',
+          user_avatar: user?.avatar_url,
           activity_count: 0
         }
         current.activity_count++

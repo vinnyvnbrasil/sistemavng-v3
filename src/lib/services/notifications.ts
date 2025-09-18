@@ -243,7 +243,7 @@ export class NotificationService {
       // Log activity
       if (data.sender_id) {
         await ActivityService.logActivity(
-          'create',
+          'notification_created',
           `Notificação "${title}" foi enviada`,
           data.sender_id,
           'notification',
@@ -600,7 +600,7 @@ export class NotificationService {
           // in_app is handled by real-time WebSocket
         }
       } catch (error) {
-        console.error(`Erro ao enviar via ${channel.type}:`, error)
+        console.error(`Erro ao enviar via ${channel.type}:`, error instanceof Error ? error.message : String(error))
       }
     }
   }

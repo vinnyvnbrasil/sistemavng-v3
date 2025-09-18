@@ -61,6 +61,7 @@ import {
   RestoreStatus,
   BackupFrequency,
   StorageProvider,
+  CompressionLevel,
   BackupStats,
   RestoreStats,
   BackupHealth,
@@ -167,14 +168,21 @@ export default function BackupPage() {
     description: '',
     type: BackupType.FULL,
     settings: {
-      storage_provider: StorageProvider.LOCAL,
-      encryption_enabled: true,
-      compression_level: 'medium',
-      include_patterns: ['**/*'],
+      include_files: true,
+      include_database: true,
+      include_user_data: true,
+      include_system_config: false,
+      include_logs: false,
       exclude_patterns: ['**/node_modules/**', '**/.git/**'],
-      max_file_size: 100 * 1024 * 1024, // 100MB
-      follow_symlinks: false,
-      preserve_permissions: true,
+      compression_level: CompressionLevel.MEDIUM,
+      encryption_enabled: true,
+      storage_provider: StorageProvider.LOCAL,
+      storage_config: {
+        provider: StorageProvider.LOCAL,
+        path_prefix: '/backups'
+      },
+      timeout_minutes: 60,
+      parallel_uploads: false,
       verify_integrity: true
     },
     tags: [],
@@ -188,29 +196,37 @@ export default function BackupPage() {
     frequency: BackupFrequency.DAILY,
     cron_expression: '0 2 * * *', // 2 AM daily
     settings: {
-      storage_provider: StorageProvider.LOCAL,
-      encryption_enabled: true,
-      compression_level: 'medium',
-      include_patterns: ['**/*'],
+      include_files: true,
+      include_database: true,
+      include_user_data: true,
+      include_system_config: false,
+      include_logs: false,
       exclude_patterns: ['**/node_modules/**', '**/.git/**'],
-      max_file_size: 100 * 1024 * 1024,
-      follow_symlinks: false,
-      preserve_permissions: true,
+      compression_level: CompressionLevel.MEDIUM,
+      encryption_enabled: true,
+      storage_provider: StorageProvider.LOCAL,
+      storage_config: {
+        provider: StorageProvider.LOCAL,
+        path_prefix: '/backups'
+      },
+      timeout_minutes: 60,
+      parallel_uploads: false,
       verify_integrity: true
     },
     retention_policy: {
       keep_daily: 7,
       keep_weekly: 4,
       keep_monthly: 12,
-      keep_yearly: 5,
-      auto_delete_expired: true
+      keep_yearly: 5
     },
     notification_settings: {
-      notify_on_success: false,
-      notify_on_failure: true,
-      notify_on_warning: true,
+      on_success: false,
+      on_failure: true,
+      on_warning: true,
       email_recipients: [],
-      webhook_url: undefined
+      webhook_url: undefined,
+      include_logs: false,
+      include_summary: true
     },
     tags: []
   })
@@ -222,12 +238,17 @@ export default function BackupPage() {
     type: 'full' as any,
     target_location: '',
     settings: {
+      restore_files: true,
+      restore_database: true,
+      restore_user_data: true,
+      restore_system_config: false,
       overwrite_existing: false,
-      preserve_permissions: true,
+      create_rollback: true,
       verify_integrity: true,
-      restore_metadata: true,
+      target_path: '',
       exclude_patterns: [],
-      dry_run: false
+      preserve_permissions: true,
+      restore_timestamps: true
     },
     is_test_restore: false
   })
@@ -276,14 +297,21 @@ export default function BackupPage() {
         description: '',
         type: BackupType.FULL,
         settings: {
-          storage_provider: StorageProvider.LOCAL,
-          encryption_enabled: true,
-          compression_level: 'medium',
-          include_patterns: ['**/*'],
+          include_files: true,
+          include_database: true,
+          include_user_data: true,
+          include_system_config: true,
+          include_logs: false,
           exclude_patterns: ['**/node_modules/**', '**/.git/**'],
-          max_file_size: 100 * 1024 * 1024,
-          follow_symlinks: false,
-          preserve_permissions: true,
+          compression_level: CompressionLevel.MEDIUM,
+          encryption_enabled: true,
+          storage_provider: StorageProvider.LOCAL,
+          storage_config: {
+            provider: StorageProvider.LOCAL,
+            path_prefix: '/backups'
+          },
+          timeout_minutes: 60,
+          parallel_uploads: false,
           verify_integrity: true
         },
         tags: [],
@@ -535,7 +563,7 @@ export default function BackupPage() {
                         <div>
                           <p className="font-medium">{backup.name}</p>
                           <p className="text-sm text-muted-foreground">
-                            {backup.formatted_size} • {format(new Date(backup.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+                            {formatBackupSize(backup.size)} • {format(new Date(backup.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
                           </p>
                         </div>
                       </div>
@@ -599,7 +627,7 @@ export default function BackupPage() {
                         <p className="text-sm text-muted-foreground">{backup.description}</p>
                         <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                           <span>{backup.type}</span>
-                          <span>{backup.formatted_size}</span>
+                          <span>{formatBackupSize(backup.size)}</span>
                           <span>{format(new Date(backup.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}</span>
                           {backup.creator_name && <span>por {backup.creator_name}</span>}
                         </div>
@@ -999,7 +1027,7 @@ export default function BackupPage() {
                       .filter(b => b.status === BackupStatus.COMPLETED)
                       .map((backup) => (
                         <SelectItem key={backup.id} value={backup.id}>
-                          {backup.name} - {backup.formatted_size}
+                          {backup.name} - {formatBackupSize(backup.size)}
                         </SelectItem>
                       ))
                     }

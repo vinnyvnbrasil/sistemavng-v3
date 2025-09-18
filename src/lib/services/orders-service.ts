@@ -17,7 +17,10 @@ import type {
 
 export class OrdersService {
   private supabase = createClient();
-  private blingApi = new BlingApiService();
+  private blingApi = new BlingApiService({
+    clientId: process.env.BLING_CLIENT_ID || '',
+    clientSecret: process.env.BLING_CLIENT_SECRET || ''
+  });
 
   // =====================================================
   // MÉTODOS DE CONSULTA
@@ -96,7 +99,7 @@ export class OrdersService {
 
       if (error) {
         console.error('Erro ao buscar pedidos:', error);
-        throw new Error(`Erro ao buscar pedidos: ${error.message}`);
+        throw new Error(`Erro ao buscar pedidos: ${error instanceof Error ? error.message : String(error)}`);
       }
 
       return {
@@ -123,7 +126,7 @@ export class OrdersService {
         if (error.code === 'PGRST116') {
           return null; // Pedido não encontrado
         }
-        throw new Error(`Erro ao buscar pedido: ${error.message}`);
+        throw new Error(`Erro ao buscar pedido: ${error instanceof Error ? error.message : String(error)}`);
       }
 
       return data;
@@ -139,7 +142,7 @@ export class OrdersService {
         .rpc('get_order_stats', { company_uuid: companyId });
 
       if (error) {
-        throw new Error(`Erro ao buscar estatísticas: ${error.message}`);
+        throw new Error(`Erro ao buscar estatísticas: ${error instanceof Error ? error.message : String(error)}`);
       }
 
       return data || {
@@ -204,7 +207,7 @@ export class OrdersService {
         .single();
 
       if (error) {
-        throw new Error(`Erro ao criar pedido: ${error.message}`);
+        throw new Error(`Erro ao criar pedido: ${error instanceof Error ? error.message : String(error)}`);
       }
 
       return data;
@@ -227,7 +230,7 @@ export class OrdersService {
         .single();
 
       if (error) {
-        throw new Error(`Erro ao atualizar pedido: ${error.message}`);
+        throw new Error(`Erro ao atualizar pedido: ${error instanceof Error ? error.message : String(error)}`);
       }
 
       return data;
@@ -245,7 +248,7 @@ export class OrdersService {
         .eq('id', orderId);
 
       if (error) {
-        throw new Error(`Erro ao deletar pedido: ${error.message}`);
+        throw new Error(`Erro ao deletar pedido: ${error instanceof Error ? error.message : String(error)}`);
       }
     } catch (error) {
       console.error('Erro ao deletar pedido:', error);
@@ -290,8 +293,8 @@ export class OrdersService {
         try {
           // Buscar pedidos do Bling
           const blingOrders = await this.blingApi.getOrders({
-            page,
-            limit
+            pagina: page,
+            limite: limit
           });
 
           if (!blingOrders.data || blingOrders.data.length === 0) {
@@ -302,7 +305,7 @@ export class OrdersService {
           // Processar cada pedido
           for (const blingOrder of blingOrders.data) {
             try {
-              await this.syncSingleOrderFromBling(companyId, blingOrder);
+              await this.syncSingleOrderFromBling(companyId, blingOrder as any);
               syncedCount++;
             } catch (error) {
               const errorMsg = `Erro ao sincronizar pedido ${blingOrder.numero}: ${error}`;
@@ -499,7 +502,7 @@ export class OrdersService {
         .not('marketplace', 'is', null);
 
       if (error) {
-        throw new Error(`Erro ao buscar marketplaces: ${error.message}`);
+        throw new Error(`Erro ao buscar marketplaces: ${error instanceof Error ? error.message : String(error)}`);
       }
 
       const marketplaces = [...new Set(data.map(item => item.marketplace))];
@@ -520,7 +523,7 @@ export class OrdersService {
         .limit(limit);
 
       if (error) {
-        throw new Error(`Erro ao buscar pedidos recentes: ${error.message}`);
+        throw new Error(`Erro ao buscar pedidos recentes: ${error instanceof Error ? error.message : String(error)}`);
       }
 
       return data || [];

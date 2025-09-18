@@ -72,7 +72,7 @@ export default function OrdersPage() {
       setTotalPages(Math.ceil(result.total / result.limit));
     } catch (error) {
       console.error('Erro ao carregar pedidos:', error);
-      toast.error('Erro ao carregar pedidos');
+      toast.error(`Erro ao carregar pedidos: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setLoading(false);
     }
@@ -84,6 +84,7 @@ export default function OrdersPage() {
       setStats(statsData);
     } catch (error) {
       console.error('Erro ao carregar estatísticas:', error);
+      toast.error(`Erro ao carregar estatísticas: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 
@@ -93,6 +94,7 @@ export default function OrdersPage() {
       setMarketplaces(marketplacesData);
     } catch (error) {
       console.error('Erro ao carregar marketplaces:', error);
+      toast.error(`Erro ao carregar marketplaces: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 
@@ -114,7 +116,7 @@ export default function OrdersPage() {
       await loadStats();
     } catch (error) {
       console.error('Erro na sincronização:', error);
-      toast.error('Erro ao sincronizar pedidos');
+      toast.error(`Erro ao sincronizar pedidos: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setSyncing(false);
     }
@@ -131,7 +133,7 @@ export default function OrdersPage() {
       await loadOrders();
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
-      toast.error('Erro ao atualizar status do pedido');
+      toast.error(`Erro ao atualizar status do pedido: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 

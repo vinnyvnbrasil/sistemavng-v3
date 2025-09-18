@@ -111,11 +111,11 @@ export default function FilesPage() {
       
       const [files, folders, stats] = await Promise.all([
         FileService.getFiles(
-          { ...state.filter, folder_id: state.currentFolder },
+          { ...state.filter, folder_id: state.currentFolder || undefined },
           state.sortBy,
           state.sortOrder
         ),
-        FileService.getFolders(state.currentFolder),
+        FileService.getFolders(state.currentFolder || undefined),
         FileService.getStorageStats()
       ])
 
@@ -128,7 +128,7 @@ export default function FilesPage() {
       }))
     } catch (error) {
       console.error('Erro ao carregar dados:', error)
-      toast.error('Erro ao carregar arquivos')
+      toast.error(`Erro ao carregar arquivos: ${error instanceof Error ? error.message : String(error)}`)
       setState(prev => ({ ...prev, loading: false }))
     }
   }, [state.filter, state.currentFolder, state.sortBy, state.sortOrder])
@@ -153,7 +153,7 @@ export default function FilesPage() {
         const fileData: CreateFileData = {
           file,
           name: file.name.split('.').slice(0, -1).join('.') || file.name,
-          folder_id: state.currentFolder,
+          folder_id: state.currentFolder || undefined,
           is_public: false
         }
 
@@ -178,7 +178,7 @@ export default function FilesPage() {
       loadData()
     } catch (error) {
       console.error('Erro no upload:', error)
-      toast.error('Erro ao enviar arquivos')
+      toast.error(`Erro no upload: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -186,7 +186,7 @@ export default function FilesPage() {
     try {
       await FileService.createFolder({
         ...folderData,
-        parent_id: state.currentFolder
+        parent_id: state.currentFolder || undefined
       })
       
       toast.success('Pasta criada com sucesso')
@@ -195,7 +195,7 @@ export default function FilesPage() {
       loadData()
     } catch (error) {
       console.error('Erro ao criar pasta:', error)
-      toast.error('Erro ao criar pasta')
+      toast.error(`Erro ao criar pasta: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -206,7 +206,7 @@ export default function FilesPage() {
       loadData()
     } catch (error) {
       console.error('Erro ao excluir arquivo:', error)
-      toast.error('Erro ao excluir arquivo')
+      toast.error(`Erro ao excluir arquivo: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -221,7 +221,27 @@ export default function FilesPage() {
   }
 
   const getFileIcon = (file: FileUpload) => {
-    const IconComponent = FILE_TYPE_ICONS[file.type] || File
+    const extension = file.name.split('.').pop()?.toLowerCase() || ''
+    
+    // Map file extensions to Lucide React icons
+    const iconMap: Record<string, any> = {
+      // Images
+      jpg: Image, jpeg: Image, png: Image, gif: Image, bmp: Image, svg: Image, webp: Image, ico: Image,
+      // Documents
+      pdf: FileText, doc: FileText, docx: FileText, txt: FileText, rtf: FileText, odt: FileText,
+      // Videos
+      mp4: Video, avi: Video, mov: Video, wmv: Video, flv: Video, webm: Video, mkv: Video,
+      // Audio
+      mp3: Music, wav: Music, flac: Music, aac: Music, ogg: Music, wma: Music,
+      // Archives
+      zip: Archive, rar: Archive, '7z': Archive, tar: Archive, gz: Archive, bz2: Archive,
+      // Code
+      js: Code, ts: Code, jsx: Code, tsx: Code, html: Code, css: Code, scss: Code,
+      json: Code, xml: Code, py: Code, java: Code, cpp: Code, c: Code, php: Code,
+      rb: Code, go: Code, rs: Code
+    }
+    
+    const IconComponent = iconMap[extension] || File
     return <IconComponent className="h-4 w-4" />
   }
 
@@ -349,7 +369,7 @@ export default function FilesPage() {
                       {file.type}
                     </Badge>
                     <span>•</span>
-                    <span>{file.uploader_name}</span>
+                    <span>{file.uploaded_by}</span>
                   </div>
                 </div>
               </div>

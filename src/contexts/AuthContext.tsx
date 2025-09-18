@@ -2,6 +2,7 @@ import React, { createContext, useEffect, useState } from 'react';
 import type { User } from '../types/index.js';
 import { supabase } from '../lib/supabase';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
+import { UserRole } from '../types/auth';
 
 interface AuthContextType {
   user: SupabaseUser | null;
@@ -11,6 +12,8 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error?: string }>;
   updateProfile: (data: Partial<User>) => Promise<{ error?: string }>;
+  hasRole: (role: UserRole) => boolean;
+  hasPermission: (permission: string) => boolean;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -69,7 +72,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       });
       
       if (error) {
-        return { error: error.message };
+        return { error: error instanceof Error ? error.message : String(error) };
       }
       
       return {};
@@ -91,7 +94,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       });
       
       if (error) {
-        return { error: error.message };
+        return { error: error instanceof Error ? error.message : String(error) };
       }
       
       return {};
@@ -109,7 +112,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const { error } = await supabase.auth.resetPasswordForEmail(email);
       
       if (error) {
-        return { error: error.message };
+        return { error: error instanceof Error ? error.message : String(error) };
       }
       
       return {};
@@ -129,13 +132,39 @@ export function AuthProvider({ children }: AuthProviderProps) {
       });
       
       if (error) {
-        return { error: error.message };
+        return { error: error instanceof Error ? error.message : String(error) };
       }
       
       return {};
     } catch {
       return { error: 'Erro inesperado ao atualizar perfil' };
     }
+  };
+
+  // Mock role and permission checking for demo purposes
+  const hasRole = (role: UserRole): boolean => {
+    if (!user) return false;
+    
+    // For demo admin user, grant admin role
+    if (user.email === 'admin@sistemavng.com') {
+      return role === UserRole.ADMIN;
+    }
+    
+    // Default to USER role for other authenticated users
+    return role === UserRole.USER;
+  };
+
+  const hasPermission = (permission: string): boolean => {
+    if (!user) return false;
+    
+    // For demo admin user, grant all permissions
+    if (user.email === 'admin@sistemavng.com') {
+      return true;
+    }
+    
+    // Default permissions for regular users
+    const userPermissions = ['read', 'view'];
+    return userPermissions.includes(permission);
   };
 
   const value = {
@@ -146,6 +175,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     signOut,
     resetPassword,
     updateProfile,
+    hasRole,
+    hasPermission,
   };
 
   return (

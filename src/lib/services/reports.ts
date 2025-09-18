@@ -129,10 +129,10 @@ export class ReportService {
 
       // Log activity
       await ActivityService.logActivity(
-        'create',
+        'file_uploaded',
         `Relatório "${request.name}" foi criado`,
         userId,
-        'report',
+        'system',
         data.id,
         {
           entityName: request.name,
@@ -197,10 +197,10 @@ export class ReportService {
 
       // Log activity
       await ActivityService.logActivity(
-        'generate',
+        'file_uploaded',
         `Relatório "${report.name}" foi gerado`,
         (await supabase.auth.getUser()).data.user?.id || '',
-        'report',
+        'system',
         reportId,
         {
           entityName: report.name,
@@ -267,10 +267,10 @@ export class ReportService {
 
       // Log activity
       await ActivityService.logActivity(
-        'delete',
+        'file_deleted',
         `Relatório "${report.name}" foi excluído`,
         (await supabase.auth.getUser()).data.user?.id || '',
-        'report',
+        'system',
         id,
         {
           entityName: report.name
@@ -532,10 +532,10 @@ export class ReportService {
     return {
       activity_volume: data,
       activity_types: [
-        { type: 'create', count: 245, percentage: 35 },
-        { type: 'update', count: 189, percentage: 27 },
-        { type: 'delete', count: 98, percentage: 14 },
-        { type: 'view', count: 168, percentage: 24 }
+        { type: 'user_created', count: 245, percentage: 35 },
+        { type: 'user_updated', count: 189, percentage: 27 },
+        { type: 'user_deleted', count: 98, percentage: 14 },
+        { type: 'login', count: 168, percentage: 24 }
       ],
       activity_timeline: data,
       user_activity: data,

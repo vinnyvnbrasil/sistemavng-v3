@@ -65,6 +65,7 @@ export type ReportStatus =
   | 'completed'
   | 'failed'
   | 'archived'
+  | 'scheduled'
 
 // Schedule Configuration
 export interface ScheduleConfig {
@@ -400,12 +401,14 @@ export interface TrendAnalytics {
 export interface ReportGenerationRequest {
   report_id?: string
   name: string
+  description?: string
   type: ReportType
   category: ReportCategory
   parameters: ReportParameters
   format: ReportFormat
   recipients?: string[]
   schedule?: ScheduleConfig
+  is_public?: boolean
 }
 
 export interface ReportGenerationResult {

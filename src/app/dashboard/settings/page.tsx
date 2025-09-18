@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 // Alert component not available, using Card components instead;
 import { Settings, Bell, Shield, Palette, Database, Users } from 'lucide-react';
 // Using createClient instead of direct supabase import
@@ -76,7 +77,7 @@ export default function SettingsPage() {
           user_id: user.id,
           email_notifications: true,
           push_notifications: true,
-          theme: 'system',
+          theme: 'system' as const,
           language: 'pt-BR',
           timezone: 'America/Sao_Paulo',
           two_factor_enabled: false
@@ -99,6 +100,7 @@ export default function SettingsPage() {
       }
     } catch (error) {
       console.error('Erro ao carregar configurações:', error);
+      toast.error(`Erro ao carregar configurações: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setLoading(false);
     }
@@ -130,6 +132,7 @@ export default function SettingsPage() {
       setTimeout(() => setMessage(''), 3000);
     } catch (error) {
       console.error('Erro ao salvar configurações:', error);
+      toast.error(`Erro ao salvar configurações: ${error instanceof Error ? error.message : String(error)}`);
       setMessage('Erro ao salvar configurações.');
       setTimeout(() => setMessage(''), 3000);
     } finally {

@@ -5,13 +5,10 @@ import {
   TicketStats, 
   TicketPriority, 
   TicketStatus,
-  TicketType,
-  TicketComment,
+  TicketMessage,
   TicketAttachment,
-  MarketplaceConfig,
-  TicketTemplate,
-  TicketSLA,
-  TicketEscalation
+  Marketplace,
+  MarketplaceConfig
 } from '@/types/tickets';
 
 export class TicketsService {
@@ -59,10 +56,6 @@ export class TicketsService {
         query = query.in('priority', filters.priority);
       }
 
-      if (filters?.type && filters.type.length > 0) {
-        query = query.in('type', filters.type);
-      }
-
       if (filters?.marketplace && filters.marketplace.length > 0) {
         query = query.in('marketplace', filters.marketplace);
       }
@@ -71,12 +64,8 @@ export class TicketsService {
         query = query.in('assigned_to', filters.assigned_to);
       }
 
-      if (filters?.customer_name) {
-        query = query.ilike('customer_name', `%${filters.customer_name}%`);
-      }
-
-      if (filters?.order_number) {
-        query = query.ilike('order_number', `%${filters.order_number}%`);
+      if (filters?.search) {
+        query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%,customer_name.ilike.%${filters.search}%`);
       }
 
       if (filters?.date_from) {
@@ -85,11 +74,6 @@ export class TicketsService {
 
       if (filters?.date_to) {
         query = query.lte('created_at', filters.date_to);
-      }
-
-      if (filters?.sla_breach) {
-        const now = new Date().toISOString();
-        query = query.lt('sla_due_date', now);
       }
 
       // Paginação
@@ -108,7 +92,7 @@ export class TicketsService {
       };
     } catch (error) {
       console.error('Erro ao buscar tickets:', error);
-      throw error;
+      throw new Error(`Erro ao buscar tickets: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -138,14 +122,14 @@ export class TicketsService {
       return data;
     } catch (error) {
       console.error('Erro ao buscar ticket:', error);
-      throw error;
+      throw new Error(`Erro ao buscar ticket: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
   async createTicket(ticketData: Omit<Ticket, 'id' | 'created_at' | 'updated_at'>): Promise<Ticket> {
     try {
-      // Calcular SLA baseado no tipo e prioridade
-      const slaConfig = await this.getSLAConfig(ticketData.company_id, ticketData.type, ticketData.priority);
+      // Calcular SLA baseado na prioridade
+      const slaConfig = await this.getSLAConfig(ticketData.company_id, ticketData.priority);
       const sla_due_date = this.calculateSLADueDate(slaConfig);
 
       const { data, error } = await this.supabase
@@ -163,8 +147,8 @@ export class TicketsService {
       // Criar comentário inicial se fornecido
       if (ticketData.description) {
         await this.addComment(data.id, {
-          content: ticketData.description,
-          created_by: ticketData.created_by,
+          message: ticketData.description,
+          user_id: ticketData.created_by,
           is_internal: false
         });
       }
@@ -172,7 +156,7 @@ export class TicketsService {
       return data;
     } catch (error) {
       console.error('Erro ao criar ticket:', error);
-      throw error;
+      throw new Error(`Erro ao criar ticket: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -202,17 +186,16 @@ export class TicketsService {
         if (updates.assigned_to) changes.push(`Ticket atribuído`);
 
         await this.addComment(ticketId, {
-          content: `Ticket atualizado:\n${changes.join('\n')}`,
-          created_by: userId,
-          is_internal: true,
-          is_system: true
+          message: `Ticket atualizado:\n${changes.join('\n')}`,
+          user_id: userId,
+          is_internal: true
         });
       }
 
       return data;
     } catch (error) {
       console.error('Erro ao atualizar ticket:', error);
-      throw error;
+      throw new Error(`Erro ao atualizar ticket: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -226,16 +209,16 @@ export class TicketsService {
       if (error) throw error;
     } catch (error) {
       console.error('Erro ao deletar ticket:', error);
-      throw error;
+      throw new Error(`Erro ao deletar ticket: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
   // ==================== COMENTÁRIOS ====================
 
   async addComment(
-    ticketId: string, 
-    comment: Omit<TicketComment, 'id' | 'ticket_id' | 'created_at'>
-  ): Promise<TicketComment> {
+    ticketId: string,
+    comment: Omit<TicketMessage, 'id' | 'ticket_id' | 'created_at'>
+  ): Promise<TicketMessage> {
     try {
       const { data, error } = await this.supabase
         .from('ticket_comments')
@@ -260,11 +243,11 @@ export class TicketsService {
       return data;
     } catch (error) {
       console.error('Erro ao adicionar comentário:', error);
-      throw error;
+      throw new Error(`Erro ao adicionar comentário: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  async getComments(ticketId: string): Promise<TicketComment[]> {
+  async getComments(ticketId: string): Promise<TicketMessage[]> {
     try {
       const { data, error } = await this.supabase
         .from('ticket_comments')
@@ -279,7 +262,7 @@ export class TicketsService {
       return data || [];
     } catch (error) {
       console.error('Erro ao buscar comentários:', error);
-      throw error;
+      throw new Error(`Erro ao buscar comentários: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -303,7 +286,7 @@ export class TicketsService {
       return data;
     } catch (error) {
       console.error('Erro ao adicionar anexo:', error);
-      throw error;
+      throw new Error(`Erro ao adicionar anexo: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -325,7 +308,7 @@ export class TicketsService {
       return publicUrl;
     } catch (error) {
       console.error('Erro ao fazer upload do arquivo:', error);
-      throw error;
+      throw new Error(`Erro ao fazer upload do arquivo: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -335,7 +318,7 @@ export class TicketsService {
     try {
       const { data: tickets, error } = await this.supabase
         .from('tickets')
-        .select('status, priority, type, marketplace, created_at, sla_due_date')
+        .select('status, priority, marketplace, created_at, sla_due_date')
         .eq('company_id', companyId);
 
       if (error) throw error;
@@ -345,33 +328,31 @@ export class TicketsService {
 
       const stats: TicketStats = {
         total: tickets.length,
-        recent_tickets: tickets.filter(t => new Date(t.created_at) >= sevenDaysAgo).length,
-        by_status: {},
-        by_priority: {},
-        by_type: {},
-        by_marketplace: {},
-        sla_breached: tickets.filter(t => 
-          t.sla_due_date && new Date(t.sla_due_date) < now && 
-          !['resolved', 'closed'].includes(t.status)
-        ).length,
-        average_resolution_time: 0, // TODO: Calcular baseado em tickets resolvidos
-        satisfaction_score: 0 // TODO: Implementar sistema de avaliação
+        by_status: {} as Record<TicketStatus, number>,
+        by_priority: {} as Record<TicketPriority, number>,
+        by_marketplace: {} as Record<Marketplace, number>,
+        avg_resolution_time: 0, // TODO: Calcular baseado em tickets resolvidos
+        resolution_rate: 0, // TODO: Calcular baseado em tickets resolvidos
+        customer_satisfaction: 0 // TODO: Implementar sistema de avaliação
       };
 
       // Contar por status
-      tickets.forEach(ticket => {
-        stats.by_status[ticket.status] = (stats.by_status[ticket.status] || 0) + 1;
-        stats.by_priority[ticket.priority] = (stats.by_priority[ticket.priority] || 0) + 1;
-        stats.by_type[ticket.type] = (stats.by_type[ticket.type] || 0) + 1;
-        if (ticket.marketplace) {
-          stats.by_marketplace[ticket.marketplace] = (stats.by_marketplace[ticket.marketplace] || 0) + 1;
+      tickets.forEach((ticket: any) => {
+        const status = ticket.status as TicketStatus;
+        const priority = ticket.priority as TicketPriority;
+        const marketplace = ticket.marketplace as Marketplace;
+        
+        stats.by_status[status] = (stats.by_status[status] || 0) + 1;
+        stats.by_priority[priority] = (stats.by_priority[priority] || 0) + 1;
+        if (marketplace) {
+          stats.by_marketplace[marketplace] = (stats.by_marketplace[marketplace] || 0) + 1;
         }
       });
 
       return stats;
     } catch (error) {
       console.error('Erro ao buscar estatísticas:', error);
-      throw error;
+      throw new Error(`Erro ao buscar estatísticas: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -389,11 +370,11 @@ export class TicketsService {
       return data || [];
     } catch (error) {
       console.error('Erro ao buscar configurações de marketplace:', error);
-      throw error;
+      throw new Error(`Erro ao buscar configurações de marketplace: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  async getTicketTemplates(companyId: string, type?: TicketType): Promise<TicketTemplate[]> {
+  async getTicketTemplates(companyId: string, type?: string): Promise<any[]> {
     try {
       let query = this.supabase
         .from('ticket_templates')
@@ -411,7 +392,7 @@ export class TicketsService {
       return data || [];
     } catch (error) {
       console.error('Erro ao buscar templates:', error);
-      throw error;
+      throw new Error(`Erro ao buscar templates: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -419,15 +400,13 @@ export class TicketsService {
 
   async getSLAConfig(
     companyId: string, 
-    type: TicketType, 
     priority: TicketPriority
-  ): Promise<TicketSLA | null> {
+  ): Promise<any | null> {
     try {
       const { data, error } = await this.supabase
         .from('ticket_sla_configs')
         .select('*')
         .eq('company_id', companyId)
-        .eq('ticket_type', type)
         .eq('priority', priority)
         .single();
 
@@ -439,7 +418,7 @@ export class TicketsService {
     }
   }
 
-  private calculateSLADueDate(slaConfig: TicketSLA | null): string | null {
+  private calculateSLADueDate(slaConfig: any | null): string | null {
     if (!slaConfig) return null;
 
     const now = new Date();
@@ -452,7 +431,7 @@ export class TicketsService {
     escalatedBy: string,
     escalatedTo: string,
     reason: string
-  ): Promise<TicketEscalation> {
+  ): Promise<any> {
     try {
       const { data, error } = await this.supabase
         .from('ticket_escalations')
@@ -475,7 +454,7 @@ export class TicketsService {
       // Atualizar o ticket
       await this.updateTicket(ticketId, {
         assigned_to: escalatedTo,
-        priority: 'high' // Aumentar prioridade na escalação
+        priority: 'high' as TicketPriority // Aumentar prioridade na escalação
       }, escalatedBy);
 
       return data;
@@ -537,11 +516,11 @@ export class TicketsService {
 
       if (error) throw error;
 
-      return data?.map(member => ({
-        id: member.profiles.id,
-        full_name: member.profiles.full_name,
-        email: member.profiles.email,
-        avatar_url: member.profiles.avatar_url,
+      return data?.map((member: any) => ({
+        id: member.profiles?.id,
+        full_name: member.profiles?.full_name,
+        email: member.profiles?.email,
+        avatar_url: member.profiles?.avatar_url,
         role: member.role
       })) || [];
     } catch (error) {
@@ -576,12 +555,11 @@ export class TicketsService {
       if (!ticket) return;
 
       // Verificar SLA
-      if (ticket.sla_due_date && new Date(ticket.sla_due_date) < new Date()) {
+      if ((ticket as any).sla_due_date && new Date((ticket as any).sla_due_date) < new Date()) {
         await this.addComment(ticketId, {
-          content: '⚠️ SLA violado! Este ticket precisa de atenção imediata.',
-          created_by: 'system',
-          is_internal: true,
-          is_system: true
+          message: '⚠️ SLA violado! Este ticket precisa de atenção imediata.',
+          user_id: 'system',
+          is_internal: true
         });
       }
 

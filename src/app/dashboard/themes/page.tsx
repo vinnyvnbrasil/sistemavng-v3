@@ -473,7 +473,8 @@ export default function ThemesPage() {
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
-                  onClick={() => previewTheme(state.themeBuilder.current_theme)}
+                  onClick={() => state.themeBuilder && previewTheme(state.themeBuilder.current_theme)}
+                  disabled={!state.themeBuilder}
                 >
                   <Eye className="h-4 w-4 mr-2" />
                   Visualizar

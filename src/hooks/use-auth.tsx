@@ -23,6 +23,7 @@ interface AuthContextType {
   hasPermission: (permission: Permission) => boolean
   hasAnyPermission: (permissions: Permission[]) => boolean
   hasAllPermissions: (permissions: Permission[]) => boolean
+  hasRole: (role: string) => boolean
   isAdmin: boolean
   isLeader: boolean
   isOperator: boolean
@@ -85,7 +86,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       })
 
       if (error) {
-        return { success: false, error: error.message }
+        return { success: false, error: error instanceof Error ? error.message : String(error) }
       }
 
       if (data.user) {
@@ -139,7 +140,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       })
 
       if (error) {
-        return { success: false, error: error.message }
+        return { success: false, error: error instanceof Error ? error.message : String(error) }
       }
 
       if (data.user) {
@@ -174,7 +175,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       })
 
       if (error) {
-        return { success: false, error: error.message }
+        return { success: false, error: error instanceof Error ? error.message : String(error) }
       }
 
       return { success: true }
@@ -233,6 +234,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return rbacService.checkAllPermissions(user.id, permissions) as any // Simplificado para uso síncrono
   }
 
+  // Função para verificar role
+  const hasRole = (role: string): boolean => {
+    if (!user) return false
+    return user.role === role
+  }
+
   // Verificações de função
   const isAdmin = user?.role === 'admin'
   const isLeader = user?.role === 'leader' || isAdmin
@@ -249,6 +256,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     hasPermission,
     hasAnyPermission,
     hasAllPermissions,
+    hasRole,
     isAdmin,
     isLeader,
     isOperator,

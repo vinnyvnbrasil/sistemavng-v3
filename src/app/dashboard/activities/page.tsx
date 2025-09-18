@@ -84,7 +84,7 @@ export default function ActivitiesPage() {
       ])
     } catch (error) {
       console.error('Erro ao carregar dados:', error)
-      toast.error('Erro ao carregar dados do dashboard')
+      toast.error(`Erro ao carregar dados do dashboard: ${error instanceof Error ? error.message : String(error)}`)
     } finally {
       setLoading(false)
     }
@@ -111,7 +111,7 @@ export default function ActivitiesPage() {
       setActivities(data)
     } catch (error) {
       console.error('Erro ao carregar atividades:', error)
-      toast.error('Erro ao carregar atividades')
+      toast.error(`Erro ao carregar atividades: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 

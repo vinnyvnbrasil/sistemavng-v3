@@ -65,16 +65,25 @@ import { toast } from 'sonner'
 import { formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
-const NOTIFICATION_ICONS = {
-  info: Info,
-  success: CheckCircle,
-  warning: AlertTriangle,
-  error: XCircle,
-  message: MessageSquare,
+const NOTIFICATION_ICONS: Record<NotificationType, any> = {
+  system: Settings,
+  user_activity: User,
+  project_update: BarChart3,
+  task_assigned: Users,
+  task_completed: CheckCircle,
+  task_overdue: Clock,
+  file_shared: Mail,
+  file_uploaded: MailOpen,
+  comment_added: MessageSquare,
   mention: User,
-  assignment: Users,
-  reminder: Clock,
-  system: Settings
+  team_invitation: Users,
+  team_update: Activity,
+  security_alert: AlertTriangle,
+  backup_completed: CheckCircle,
+  backup_failed: XCircle,
+  report_generated: TrendingUp,
+  maintenance: Settings,
+  custom: Bell
 }
 
 const PRIORITY_ICONS = {

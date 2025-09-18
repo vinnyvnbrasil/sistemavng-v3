@@ -37,13 +37,19 @@ export type ActivityType =
   | 'team_member_removed'
   | 'comment_added'
   | 'file_uploaded'
+  | 'file_updated'
   | 'file_deleted'
+  | 'file_moved'
+  | 'file_downloaded'
+  | 'file_copied'
+  | 'folder_created'
+  | 'notification_created'
   | 'login'
   | 'logout'
   | 'password_changed'
   | 'profile_updated'
 
-export type EntityType = 'project' | 'task' | 'user' | 'team' | 'comment' | 'file' | 'system'
+export type EntityType = 'project' | 'task' | 'user' | 'team' | 'comment' | 'file' | 'notification' | 'system'
 
 export interface ActivityMetadata {
   old_value?: any
@@ -242,7 +248,13 @@ export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
   team_member_removed: 'Membro removido da equipe',
   comment_added: 'Comentário adicionado',
   file_uploaded: 'Arquivo enviado',
+  file_updated: 'Arquivo atualizado',
   file_deleted: 'Arquivo excluído',
+  file_moved: 'Arquivo movido',
+  file_downloaded: 'Arquivo baixado',
+  file_copied: 'Arquivo copiado',
+  folder_created: 'Pasta criada',
+  notification_created: 'Notificação criada',
   login: 'Login realizado',
   logout: 'Logout realizado',
   password_changed: 'Senha alterada',
@@ -273,7 +285,13 @@ export const ACTIVITY_TYPE_COLORS: Record<ActivityType, string> = {
   team_member_removed: 'bg-orange-100 text-orange-800',
   comment_added: 'bg-gray-100 text-gray-800',
   file_uploaded: 'bg-blue-100 text-blue-800',
+  file_updated: 'bg-blue-100 text-blue-800',
   file_deleted: 'bg-red-100 text-red-800',
+  file_moved: 'bg-yellow-100 text-yellow-800',
+  file_downloaded: 'bg-green-100 text-green-800',
+  file_copied: 'bg-purple-100 text-purple-800',
+  folder_created: 'bg-cyan-100 text-cyan-800',
+  notification_created: 'bg-indigo-100 text-indigo-800',
   login: 'bg-green-100 text-green-800',
   logout: 'bg-gray-100 text-gray-800',
   password_changed: 'bg-yellow-100 text-yellow-800',
@@ -288,6 +306,7 @@ export const ENTITY_TYPE_LABELS: Record<EntityType, string> = {
   team: 'Equipe',
   comment: 'Comentário',
   file: 'Arquivo',
+  notification: 'Notificação',
   system: 'Sistema'
 }
 

@@ -188,7 +188,7 @@ export class ProjectService {
       throw new Error('Sem permissão para remover membros')
     }
 
-    const teamMembers = (project.team_members || []).filter(id => id !== userId)
+    const teamMembers = (project.team_members || []).filter((id: string) => id !== userId)
     
     const { error } = await supabase
       .from('projects')
@@ -222,8 +222,8 @@ export class ProjectService {
       `)
       .eq('project_id', projectId)
 
-    if (error) throw error
-    return data || []
+    if (membersError) throw membersError
+    return members || []
   }
 
   // Verificar permissão no projeto
@@ -274,7 +274,7 @@ export class ProjectService {
   }
 
   // Obter atividades do projeto
-  static async getProjectActivities(projectId: string, limit = 50): Promise<any[]> {
+  static async getProjectActivities(projectId: string, limit = 50): Promise<ProjectActivity[]> {
     const { data, error } = await supabase
       .from('activities')
       .select(`
@@ -329,8 +329,8 @@ export class ProjectService {
     let totalProgress = 0
 
     projects.forEach(project => {
-      stats.by_status[project.status]++
-      stats.by_priority[project.priority]++
+      stats.by_status[project.status as keyof typeof stats.by_status]++
+      stats.by_priority[project.priority as keyof typeof stats.by_priority]++
       totalProgress += project.progress
 
       if (project.deadline && new Date(project.deadline) < now && project.status !== 'completed') {

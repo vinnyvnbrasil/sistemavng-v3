@@ -84,7 +84,12 @@ const roleLabels = {
 export default function ProjectDetailPage() {
   const router = useRouter()
   const params = useParams()
-  const projectId = params.id as string
+  const projectId = params?.id as string
+
+  if (!projectId) {
+    router.push('/dashboard/projects')
+    return null
+  }
 
   const [project, setProject] = useState<Project | null>(null)
   const [members, setMembers] = useState<ProjectMember[]>([])

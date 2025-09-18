@@ -4,7 +4,7 @@ import { createMiddlewareClient } from '@/lib/supabase/server'
 export async function middleware(request: NextRequest) {
   try {
     // Create a Supabase client configured to use cookies
-    const { supabase, response } = createMiddlewareClient(request)
+    const supabase = createMiddlewareClient(request)
 
     // Refresh session if expired - required for Server Components
     await supabase.auth.getSession()
@@ -40,7 +40,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
 
-    return response
+    return NextResponse.next()
   } catch (e) {
     // If you are here, a Supabase client could not be created!
     // This is likely because you have not set up environment variables.

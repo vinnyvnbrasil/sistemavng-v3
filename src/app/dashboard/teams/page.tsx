@@ -48,6 +48,7 @@ import {
   AlertDialogTitle
 } from '@/components/ui/alert-dialog'
 import { toast } from 'sonner'
+import { supabase } from '@/lib/supabase/client'
 import { Team, TeamStats } from '@/types/user'
 import { UserService } from '@/lib/services/users'
 
@@ -86,7 +87,7 @@ export default function TeamsPage() {
       setTeams(teamsData.teams)
     } catch (error: any) {
       console.error('Erro ao carregar equipes:', error)
-      toast.error(error.message || 'Erro ao carregar equipes')
+      toast.error(`Erro ao carregar equipes: ${error instanceof Error ? error.message : String(error)}`)
     } finally {
       setLoading(false)
     }
@@ -98,6 +99,7 @@ export default function TeamsPage() {
       setStats(statsData)
     } catch (error: any) {
       console.error('Erro ao carregar estatísticas:', error)
+      toast.error(`Erro ao carregar estatísticas: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -106,14 +108,22 @@ export default function TeamsPage() {
     
     setDeleting(true)
     try {
-      await UserService.deleteTeam(deleteTeam.id)
+      // Get current user
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      
+      if (authError || !user) {
+        toast.error('Você precisa estar logado para excluir uma equipe')
+        return
+      }
+
+      await UserService.deleteTeam(deleteTeam.id, user.id)
       toast.success('Equipe excluída com sucesso!')
       setTeams(teams.filter(team => team.id !== deleteTeam.id))
       setDeleteTeam(null)
       loadStats() // Reload stats
     } catch (error: any) {
       console.error('Erro ao excluir equipe:', error)
-      toast.error(error.message || 'Erro ao excluir equipe')
+      toast.error(`Erro ao excluir equipe: ${error instanceof Error ? error.message : String(error)}`)
     } finally {
       setDeleting(false)
     }
@@ -144,7 +154,7 @@ export default function TeamsPage() {
     )
   }
 
-  const departments = Array.from(new Set(teams.map(team => team.department).filter(Boolean)))
+  const departments = Array.from(new Set(teams.map(team => team.department).filter((dept): dept is string => Boolean(dept))))
 
   if (loading) {
     return (
@@ -196,7 +206,7 @@ export default function TeamsPage() {
                   <p className="text-sm font-medium text-gray-600">Total de Equipes</p>
                   <p className="text-2xl font-bold text-gray-900">{stats.total_teams}</p>
                 </div>
-                <Users className="h-8 w-8 text-blue-600" />
+                <UserPlus className="h-8 w-8 text-purple-600" />
               </div>
             </CardContent>
           </Card>
@@ -219,8 +229,8 @@ export default function TeamsPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total de Membros</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.total_members}</p>
+                  <p className="text-sm font-medium text-gray-600">Total de Equipes</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.total_teams}</p>
                 </div>
                 <UserPlus className="h-8 w-8 text-purple-600" />
               </div>
@@ -231,12 +241,10 @@ export default function TeamsPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Média por Equipe</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {stats.total_teams > 0 ? Math.round(stats.total_members / stats.total_teams) : 0}
-                  </p>
+                  <p className="text-sm font-medium text-gray-600">Tamanho Médio da Equipe</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.average_team_size}</p>
                 </div>
-                <Settings className="h-8 w-8 text-orange-600" />
+                <UserPlus className="h-8 w-8 text-purple-600" />
               </div>
             </CardContent>
           </Card>

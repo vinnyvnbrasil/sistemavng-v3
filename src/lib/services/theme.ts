@@ -108,7 +108,7 @@ export class ThemeService {
       }
     } catch (error) {
       console.error('Error fetching themes:', error)
-      throw new Error('Failed to fetch themes')
+      throw new Error(`Failed to fetch themes: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -131,14 +131,31 @@ export class ThemeService {
       }
     } catch (error) {
       console.error('Error fetching theme:', error)
-      return null
+      throw new Error(`Failed to fetch theme: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
   async createTheme(request: ThemeCreateRequest, userId: string): Promise<Theme> {
     try {
+      // Create complete theme object for validation
+      const completeTheme: Partial<Theme> = {
+        name: request.name,
+        description: request.description,
+        type: request.type,
+        colors: request.colors,
+        typography: request.typography ? { ...this.getDefaultTypography(), ...request.typography } : this.getDefaultTypography(),
+        spacing: request.spacing ? { ...this.getDefaultSpacing(), ...request.spacing } : this.getDefaultSpacing(),
+        shadows: request.shadows ? { ...this.getDefaultShadows(), ...request.shadows } : this.getDefaultShadows(),
+        borders: request.borders ? { ...this.getDefaultBorders(), ...request.borders } : this.getDefaultBorders(),
+        animations: request.animations ? { ...this.getDefaultAnimations(), ...request.animations } : this.getDefaultAnimations(),
+        components: request.components ? { ...this.getDefaultComponents(), ...request.components } : this.getDefaultComponents(),
+        custom_properties: request.custom_properties || {},
+        tags: request.tags || [],
+        category: request.category || ThemeCategory.PERSONAL
+      }
+
       // Validate theme
-      const validation = validateTheme(request)
+      const validation = validateTheme(completeTheme)
       if (!validation.is_valid) {
         throw new Error(`Theme validation failed: ${validation.errors.map(e => e.message).join(', ')}`)
       }
@@ -148,12 +165,12 @@ export class ThemeService {
         description: request.description,
         type: request.type,
         colors: request.colors,
-        typography: request.typography || this.getDefaultTypography(),
-        spacing: request.spacing || this.getDefaultSpacing(),
-        shadows: request.shadows || this.getDefaultShadows(),
-        borders: request.borders || this.getDefaultBorders(),
-        animations: request.animations || this.getDefaultAnimations(),
-        components: request.components || this.getDefaultComponents(),
+        typography: request.typography ? { ...this.getDefaultTypography(), ...request.typography } : this.getDefaultTypography(),
+        spacing: request.spacing ? { ...this.getDefaultSpacing(), ...request.spacing } : this.getDefaultSpacing(),
+        shadows: request.shadows ? { ...this.getDefaultShadows(), ...request.shadows } : this.getDefaultShadows(),
+        borders: request.borders ? { ...this.getDefaultBorders(), ...request.borders } : this.getDefaultBorders(),
+        animations: request.animations ? { ...this.getDefaultAnimations(), ...request.animations } : this.getDefaultAnimations(),
+        components: request.components ? { ...this.getDefaultComponents(), ...request.components } : this.getDefaultComponents(),
         custom_properties: request.custom_properties || {},
         is_default: false,
         is_system: false,
@@ -181,7 +198,7 @@ export class ThemeService {
         {
           description: `Tema criado: ${data.name}`,
           entityName: 'theme',
-          details: {
+          metadata: {
             theme_name: data.name,
             theme_type: data.type
           }
@@ -191,7 +208,7 @@ export class ThemeService {
       return data
     } catch (error) {
       console.error('Error creating theme:', error)
-      throw new Error('Failed to create theme')
+      throw new Error(`Failed to create theme: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -208,7 +225,28 @@ export class ThemeService {
       }
 
       // Validate updates
-      const updatedTheme = { ...existingTheme.theme, ...request }
+      const updatedTheme: Partial<Theme> = { 
+        ...existingTheme.theme, 
+        ...request,
+        typography: request.typography 
+          ? { ...existingTheme.theme.typography, ...request.typography }
+          : existingTheme.theme.typography,
+        spacing: request.spacing 
+          ? { ...existingTheme.theme.spacing, ...request.spacing }
+          : existingTheme.theme.spacing,
+        shadows: request.shadows 
+          ? { ...existingTheme.theme.shadows, ...request.shadows }
+          : existingTheme.theme.shadows,
+        borders: request.borders 
+          ? { ...existingTheme.theme.borders, ...request.borders }
+          : existingTheme.theme.borders,
+        animations: request.animations 
+          ? { ...existingTheme.theme.animations, ...request.animations }
+          : existingTheme.theme.animations,
+        components: request.components 
+          ? { ...existingTheme.theme.components, ...request.components }
+          : existingTheme.theme.components
+      }
       const validation = validateTheme(updatedTheme)
       if (!validation.is_valid) {
         throw new Error(`Theme validation failed: ${validation.errors.map(e => e.message).join(', ')}`)
@@ -237,7 +275,7 @@ export class ThemeService {
         {
           description: `Tema atualizado: ${data.name}`,
           entityName: 'theme',
-          details: {
+          metadata: {
             theme_name: data.name,
             changes: Object.keys(request)
           }
@@ -253,7 +291,7 @@ export class ThemeService {
       return data
     } catch (error) {
       console.error('Error updating theme:', error)
-      throw new Error('Failed to update theme')
+      throw new Error(`Failed to update theme: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -291,14 +329,14 @@ export class ThemeService {
         {
           description: `Tema excluído: ${theme.theme.name}`,
           entityName: 'theme',
-          details: {
+          metadata: {
             theme_name: theme.theme.name
           }
         }
       )
     } catch (error) {
       console.error('Error deleting theme:', error)
-      throw new Error('Failed to delete theme')
+      throw new Error(`Failed to delete theme: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -322,7 +360,7 @@ export class ThemeService {
       return data
     } catch (error) {
       console.error('Error fetching theme config:', error)
-      throw new Error('Failed to fetch theme configuration')
+      throw new Error(`Failed to fetch theme configuration: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -350,7 +388,7 @@ export class ThemeService {
       return data
     } catch (error) {
       console.error('Error updating theme config:', error)
-      throw new Error('Failed to update theme configuration')
+      throw new Error(`Failed to update theme configuration: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -380,7 +418,7 @@ export class ThemeService {
         {
           description: `Tema ativado: ${theme.theme.name}`,
           entityName: 'theme',
-          details: {
+          metadata: {
             theme_name: theme.theme.name,
             theme_type: theme.theme.type
           }
@@ -388,7 +426,7 @@ export class ThemeService {
       )
     } catch (error) {
       console.error('Error activating theme:', error)
-      throw new Error('Failed to activate theme')
+      throw new Error(`Failed to activate theme: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -425,7 +463,7 @@ export class ThemeService {
       }
     } catch (error) {
       console.error('Error applying theme:', error)
-      throw new Error('Failed to apply theme')
+      throw new Error(`Failed to apply theme: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -626,10 +664,6 @@ export class ThemeService {
   // Utility Methods
   getCurrentTheme(): Theme | null {
     return this.currentTheme
-  }
-
-  getThemeConfig(): ThemeConfig | null {
-    return this.themeConfig
   }
 
   getCSSVariable(name: string): string | undefined {

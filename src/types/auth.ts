@@ -264,6 +264,9 @@ export interface DeviceInfo {
   device_name: string
   is_mobile: boolean
   is_trusted: boolean
+  ip_address?: string
+  user_agent?: string
+  location?: string
 }
 
 // API Response Types

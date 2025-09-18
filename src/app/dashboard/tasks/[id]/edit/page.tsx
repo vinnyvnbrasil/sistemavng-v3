@@ -51,7 +51,12 @@ const statusOptions = [
 export default function EditTaskPage() {
   const router = useRouter()
   const params = useParams()
-  const taskId = params.id as string
+  const taskId = params?.id as string
+
+  if (!taskId) {
+    router.push('/dashboard/tasks')
+    return null
+  }
 
   const [task, setTask] = useState<Task | null>(null)
   const [loading, setLoading] = useState(true)
@@ -95,17 +100,19 @@ export default function EditTaskPage() {
       setAttachments(attachmentsData)
       
       // Preencher formulário com dados da tarefa
-      setFormData({
-        title: taskData.title,
-        description: taskData.description || '',
-        status: taskData.status,
-        priority: taskData.priority,
-        due_date: taskData.due_date ? taskData.due_date.split('T')[0] : '',
-        estimated_hours: taskData.estimated_hours || 0,
-        tags: taskData.tags || [],
-        project_id: taskData.project_id || '',
-        assigned_to: taskData.assigned_to || ''
-      })
+      if (taskData) {
+        setFormData({
+          title: taskData.title,
+          description: taskData.description || '',
+          status: taskData.status,
+          priority: taskData.priority,
+          due_date: taskData.due_date ? taskData.due_date.split('T')[0] : '',
+          estimated_hours: taskData.estimated_hours || 0,
+          tags: taskData.tags || [],
+          project_id: taskData.project_id || '',
+          assigned_to: taskData.assigned_to || ''
+        })
+      }
     } catch (error: any) {
       console.error('Erro ao carregar tarefa:', error)
       toast.error(error.message || 'Erro ao carregar tarefa')
@@ -136,11 +143,11 @@ export default function EditTaskPage() {
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
 
-    if (!formData.title.trim()) {
+    if (!formData.title?.trim()) {
       newErrors.title = 'Título é obrigatório'
     }
 
-    if (formData.title.length > 200) {
+    if (formData.title && formData.title.length > 200) {
       newErrors.title = 'Título deve ter no máximo 200 caracteres'
     }
 
@@ -561,7 +568,7 @@ export default function EditTaskPage() {
                     <div key={attachment.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                       <div className="flex items-center gap-2">
                         <FileText className="h-4 w-4 text-gray-500" />
-                        <span className="text-sm">{attachment.filename}</span>
+                        <span className="text-sm">{attachment.file_name}</span>
                         <span className="text-xs text-gray-500">({formatFileSize(attachment.file_size)})</span>
                       </div>
                       <Button

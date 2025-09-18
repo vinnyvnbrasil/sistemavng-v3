@@ -188,23 +188,7 @@ export class FileService {
       // Upload file to storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('files')
-        .upload(filePath, file, {
-          onUploadProgress: (progress) => {
-            if (onProgress) {
-              onProgress({
-                file_id: fileRecord.id,
-                file_name: name,
-                progress: (progress.loaded / progress.total) * 100,
-                status: 'uploading' as UploadStatus,
-                uploaded_size: progress.loaded,
-                total_size: progress.total,
-                speed: progress.loaded / ((Date.now() - timestamp) / 1000),
-                eta: progress.total > progress.loaded ? 
-                  ((progress.total - progress.loaded) / (progress.loaded / ((Date.now() - timestamp) / 1000))) : 0
-              })
-            }
-          }
-        })
+        .upload(filePath, file)
 
       if (uploadError) {
         // Clean up file record on upload failure
@@ -239,7 +223,7 @@ export class FileService {
 
       // Log activity
       await ActivityService.logActivity(
-        'upload',
+        'file_uploaded',
         `Arquivo "${name}" foi enviado`,
         updatedFile.uploaded_by,
         'file',
@@ -311,7 +295,7 @@ export class FileService {
 
       // Log activity
       await ActivityService.logActivity(
-        'update',
+        'file_updated',
         `Arquivo "${data.name}" foi atualizado`,
         (await supabase.auth.getUser()).data.user?.id || '',
         'file',
@@ -358,7 +342,7 @@ export class FileService {
 
       // Log activity
       await ActivityService.logActivity(
-        'delete',
+        'file_deleted',
         `Arquivo "${file.name}" foi excluído`,
         (await supabase.auth.getUser()).data.user?.id || '',
         'file',
@@ -385,7 +369,7 @@ export class FileService {
 
       // Log activity
       await ActivityService.logActivity(
-        'download',
+        'file_downloaded',
         `Arquivo "${file.name}" foi baixado`,
         (await supabase.auth.getUser()).data.user?.id || '',
         'file',
@@ -475,7 +459,7 @@ export class FileService {
 
       // Log activity
       await ActivityService.logActivity(
-        'create',
+        'folder_created',
         `Pasta "${folderData.name}" foi criada`,
         userId,
         'file',
@@ -617,7 +601,7 @@ export class FileService {
       // Log activity
       const file = await this.getFileById(fileId)
       await ActivityService.logActivity(
-        'move',
+        'file_moved',
         `Arquivo "${file.name}" foi movido`,
         (await supabase.auth.getUser()).data.user?.id || '',
         'file',
@@ -670,7 +654,7 @@ export class FileService {
 
       // Log activity
       await ActivityService.logActivity(
-        'copy',
+        'file_copied',
         `Arquivo "${originalFile.name}" foi copiado`,
         userId,
         'file',

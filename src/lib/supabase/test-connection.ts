@@ -74,7 +74,7 @@ export async function testRLS() {
         const { data, error } = await supabase.from(table).select('id').limit(1)
         
         if (error) {
-          results.push({ table, status: 'error', message: error.message })
+          results.push({ table, status: 'error', message: error instanceof Error ? error.message : String(error) })
         } else {
           results.push({ table, status: 'success', count: data?.length || 0 })
         }
@@ -130,7 +130,7 @@ export async function testDataInsertion() {
         name: 'Empresa Teste',
         description: 'Empresa criada para teste de conexão',
         country: 'Brasil'
-      })
+      } as any)
       .select()
     
     if (error) {

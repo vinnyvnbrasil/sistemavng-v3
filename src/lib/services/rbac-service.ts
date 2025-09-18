@@ -31,7 +31,7 @@ export class RBACService {
   /**
    * Busca usuários com filtros e paginação
    */
-  async getUsers(params: UserSearchParams): Promise<UsersResponse> {
+  async getUsers(params: UserSearchParams, companyId: string): Promise<UsersResponse> {
     try {
       let query = supabase
         .from('team_members')
@@ -39,6 +39,7 @@ export class RBACService {
           *,
           user:users(email, full_name, avatar_url, last_login)
         `)
+        .eq('company_id', companyId)
 
       // Aplicar filtros
       if (params.filters.role?.length) {
@@ -61,7 +62,33 @@ export class RBACService {
       }
 
       // Contar total
-      const { count } = await query.select('*', { count: 'exact', head: true })
+      const { count } = await supabase
+        .from('team_members')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', companyId)
+
+      // Aplicar filtros para contagem
+      let countQuery = supabase
+        .from('team_members')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', companyId)
+
+      if (params.filters.role) {
+        countQuery = countQuery.eq('role', params.filters.role)
+      }
+
+      if (params.filters.is_active !== undefined) {
+        countQuery = countQuery.eq('is_active', params.filters.is_active)
+      }
+
+      if (params.filters.search) {
+        countQuery = countQuery.or(`
+          user.full_name.ilike.%${params.filters.search}%,
+          user.email.ilike.%${params.filters.search}%
+        `)
+      }
+
+      const { count: filteredCount } = await countQuery
 
       // Aplicar ordenação e paginação
       const { data, error } = await query
@@ -75,8 +102,8 @@ export class RBACService {
 
       return {
         users: data as TeamMember[],
-        total: count || 0,
-        total_pages: Math.ceil((count || 0) / params.limit),
+        total: filteredCount || 0,
+        total_pages: Math.ceil((filteredCount || 0) / params.limit),
         current_page: params.page
       }
     } catch (error) {
@@ -539,7 +566,7 @@ export class RBACService {
 
       // Contar por função
       data.forEach(user => {
-        stats.by_role[user.role] = (stats.by_role[user.role] || 0) + 1
+        stats.by_role[user.role as keyof typeof stats.by_role] = (stats.by_role[user.role as keyof typeof stats.by_role] || 0) + 1
       })
 
       // Contar por departamento

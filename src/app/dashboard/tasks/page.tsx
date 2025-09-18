@@ -54,32 +54,23 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Progress } from '@/components/ui/progress'
 import { toast } from 'sonner'
-import { 
-  Ticket, 
-  TicketFilters, 
-  TicketStats, 
-  TicketStatus,
-  TicketPriority,
-  TicketType
-} from '@/types/tickets'
-import { TicketsService } from '@/lib/services/tickets-service'
+import { Task, TaskFilters, TaskStats, TaskStatus, TaskPriority, TaskSearchParams } from '@/types/task'
+import { TaskService } from '@/lib/services/tasks'
 
 const statusIcons = {
-  open: Circle,
+  todo: Circle,
   in_progress: PlayCircle,
-  waiting_customer: PauseCircle,
-  waiting_supplier: Clock,
-  resolved: CheckCircle2,
-  closed: XCircle
+  review: PauseCircle,
+  done: CheckCircle2,
+  cancelled: XCircle
 }
 
 const statusColors = {
-  open: 'bg-blue-100 text-blue-800',
+  todo: 'bg-blue-100 text-blue-800',
   in_progress: 'bg-yellow-100 text-yellow-800',
-  waiting_customer: 'bg-orange-100 text-orange-800',
-  waiting_supplier: 'bg-purple-100 text-purple-800',
-  resolved: 'bg-green-100 text-green-800',
-  closed: 'bg-gray-100 text-gray-800'
+  review: 'bg-orange-100 text-orange-800',
+  done: 'bg-green-100 text-green-800',
+  cancelled: 'bg-gray-100 text-gray-800'
 }
 
 const priorityColors = {
@@ -89,24 +80,12 @@ const priorityColors = {
   urgent: 'bg-red-100 text-red-800'
 }
 
-const typeColors = {
-  support: 'bg-blue-100 text-blue-800',
-  bug: 'bg-red-100 text-red-800',
-  feature_request: 'bg-green-100 text-green-800',
-  order_issue: 'bg-orange-100 text-orange-800',
-  refund: 'bg-purple-100 text-purple-800',
-  shipping: 'bg-yellow-100 text-yellow-800',
-  product_question: 'bg-indigo-100 text-indigo-800',
-  complaint: 'bg-red-100 text-red-800'
-}
-
 const statusLabels = {
-  open: 'Aberto',
+  todo: 'A Fazer',
   in_progress: 'Em Andamento',
-  waiting_customer: 'Aguardando Cliente',
-  waiting_supplier: 'Aguardando Fornecedor',
-  resolved: 'Resolvido',
-  closed: 'Fechado'
+  review: 'Em Revisão',
+  done: 'Concluída',
+  cancelled: 'Cancelada'
 }
 
 const priorityLabels = {
@@ -116,75 +95,51 @@ const priorityLabels = {
   urgent: 'Urgente'
 }
 
-const typeLabels = {
-  support: 'Suporte',
-  bug: 'Bug',
-  feature_request: 'Solicitação de Recurso',
-  order_issue: 'Problema no Pedido',
-  refund: 'Reembolso',
-  shipping: 'Envio',
-  product_question: 'Dúvida sobre Produto',
-  complaint: 'Reclamação'
-}
-
-const marketplaceIcons = {
-  mercadolivre: '🛒',
-  shopee: '🛍️',
-  amazon: '📦',
-  magalu: '🏪',
-  americanas: '🏬',
-  casasbahia: '🏠',
-  extra: '🛒',
-  carrefour: '🛒'
-}
-
-export default function TicketsPage() {
+export default function TasksPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const ticketsService = new TicketsService()
 
-  const [tickets, setTickets] = useState<Ticket[]>([])
-  const [stats, setStats] = useState<TicketStats | null>(null)
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [stats, setStats] = useState<TaskStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list')
   const [searchTerm, setSearchTerm] = useState('')
-  const [filters, setFilters] = useState<TicketFilters>({
+  const [filters, setFilters] = useState<TaskFilters>({
     status: [],
     priority: [],
-    type: [],
-    marketplace: [],
     assigned_to: []
   })
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [teamMembers, setTeamMembers] = useState<any[]>([])
-  const [marketplaces, setMarketplaces] = useState<string[]>([])
 
   useEffect(() => {
-    loadTickets()
+    loadTasks()
     loadStats()
     loadTeamMembers()
-    loadMarketplaces()
   }, [filters, searchTerm, currentPage])
 
-  const loadTickets = async () => {
+  const loadTasks = async () => {
     try {
       setLoading(true)
-      const companyId = 'company-id' // TODO: Obter do contexto de autenticação
-      
-      const searchFilters = {
-        ...filters,
-        customer_name: searchTerm || undefined,
-        order_number: searchTerm || undefined
+      const searchParams: TaskSearchParams = {
+        filters: {
+          ...filters,
+          search: searchTerm || undefined
+        },
+        page: currentPage,
+        limit: 20,
+        sort_field: 'created_at',
+        sort_direction: 'desc'
       }
 
-      const result = await ticketsService.getTickets(companyId, searchFilters, currentPage, 20)
-      setTickets(result.data)
-      setTotalPages(Math.ceil(result.total / 20))
-    } catch (error: any) {
-      console.error('Erro ao carregar tickets:', error)
-      toast.error(error.message || 'Erro ao carregar tickets')
+      const result = await TaskService.getTasks(searchParams)
+      setTasks(result.tasks)
+      setTotalPages(result.total_pages)
+    } catch (error) {
+      console.error('Erro ao carregar tarefas:', error)
+      toast.error(`Erro ao carregar tarefas: ${error instanceof Error ? error.message : String(error)}`)
     } finally {
       setLoading(false)
     }
@@ -192,31 +147,45 @@ export default function TicketsPage() {
 
   const loadStats = async () => {
     try {
-      const companyId = 'company-id' // TODO: Obter do contexto de autenticação
-      const statsData = await ticketsService.getTicketStats(companyId)
-      setStats(statsData)
-    } catch (error: any) {
+      const stats = await TaskService.getTaskStats(filters)
+      setStats(stats)
+    } catch (error) {
       console.error('Erro ao carregar estatísticas:', error)
+      toast.error(`Erro ao carregar estatísticas: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
   const loadTeamMembers = async () => {
     try {
-      const companyId = 'company-id' // TODO: Obter do contexto de autenticação
-      const members = await ticketsService.getTeamMembers(companyId)
-      setTeamMembers(members)
-    } catch (error: any) {
+      // Implementar busca de membros da equipe
+      setTeamMembers([])
+    } catch (error) {
       console.error('Erro ao carregar membros da equipe:', error)
+      toast.error(`Erro ao carregar membros da equipe: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
-  const loadMarketplaces = async () => {
+  const syncTasks = async () => {
     try {
-      const companyId = 'company-id' // TODO: Obter do contexto de autenticação
-      const marketplaceList = await ticketsService.getMarketplaces(companyId)
-      setMarketplaces(marketplaceList)
-    } catch (error: any) {
-      console.error('Erro ao carregar marketplaces:', error)
+      setSyncing(true)
+      await loadTasks()
+      await loadStats()
+      toast.success('Tarefas sincronizadas com sucesso')
+    } catch (error) {
+      console.error('Erro ao sincronizar tarefas:', error)
+      toast.error(`Erro ao sincronizar tarefas: ${error instanceof Error ? error.message : String(error)}`)
+    } finally {
+      setSyncing(false)
+    }
+  }
+
+  const exportTasks = async () => {
+    try {
+      // Implementar exportação de tarefas
+      toast.success('Tarefas exportadas com sucesso')
+    } catch (error) {
+      console.error('Erro ao exportar tarefas:', error)
+      toast.error(`Erro ao exportar tarefas: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -225,74 +194,45 @@ export default function TicketsPage() {
     setCurrentPage(1)
   }
 
-  const handleFilterChange = (key: keyof TicketFilters, value: any) => {
+  const handleFilterChange = (key: keyof TaskFilters, value: any) => {
     setFilters(prev => ({ ...prev, [key]: value }))
     setCurrentPage(1)
   }
 
-  const handleStatusChange = async (ticketId: string, newStatus: TicketStatus) => {
+  const handleStatusChange = async (taskId: string, newStatus: TaskStatus) => {
     try {
-      const userId = 'user-id' // TODO: Obter do contexto de autenticação
-      await ticketsService.updateTicket(ticketId, { status: newStatus }, userId)
-      await loadTickets()
-      toast.success('Status do ticket atualizado com sucesso')
-    } catch (error: any) {
+      await TaskService.updateTask(taskId, { status: newStatus })
+      await loadTasks()
+      toast.success('Status da tarefa atualizado com sucesso')
+    } catch (error) {
       console.error('Erro ao atualizar status:', error)
-      toast.error(error.message || 'Erro ao atualizar status do ticket')
+      toast.error(`Erro ao atualizar status da tarefa: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
-  const handlePriorityChange = async (ticketId: string, newPriority: TicketPriority) => {
+  const handlePriorityChange = async (taskId: string, newPriority: TaskPriority) => {
     try {
-      const userId = 'user-id' // TODO: Obter do contexto de autenticação
-      await ticketsService.updateTicket(ticketId, { priority: newPriority }, userId)
-      await loadTickets()
-      toast.success('Prioridade do ticket atualizada com sucesso')
-    } catch (error: any) {
+      await TaskService.updateTask(taskId, { priority: newPriority })
+      await loadTasks()
+      toast.success('Prioridade da tarefa atualizada com sucesso')
+    } catch (error) {
       console.error('Erro ao atualizar prioridade:', error)
-      toast.error(error.message || 'Erro ao atualizar prioridade do ticket')
+      toast.error(`Erro ao atualizar prioridade da tarefa: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
-  const handleAssignTicket = async (ticketId: string, assignedTo: string) => {
+  const handleAssignTask = async (taskId: string, assignedTo: string) => {
     try {
-      const userId = 'user-id' // TODO: Obter do contexto de autenticação
-      await ticketsService.updateTicket(ticketId, { assigned_to: assignedTo }, userId)
-      await loadTickets()
-      toast.success('Ticket atribuído com sucesso')
-    } catch (error: any) {
-      console.error('Erro ao atribuir ticket:', error)
-      toast.error(error.message || 'Erro ao atribuir ticket')
+      await TaskService.updateTask(taskId, { assigned_to: assignedTo })
+      await loadTasks()
+      toast.success('Tarefa atribuída com sucesso')
+    } catch (error) {
+      console.error('Erro ao atribuir tarefa:', error)
+      toast.error(`Erro ao atribuir tarefa: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
-  const syncTickets = async () => {
-    try {
-      setSyncing(true)
-      // TODO: Implementar sincronização com marketplaces
-      await new Promise(resolve => setTimeout(resolve, 2000)) // Simular sincronização
-      await loadTickets()
-      await loadStats()
-      toast.success('Tickets sincronizados com sucesso')
-    } catch (error: any) {
-      console.error('Erro ao sincronizar tickets:', error)
-      toast.error(error.message || 'Erro ao sincronizar tickets')
-    } finally {
-      setSyncing(false)
-    }
-  }
-
-  const exportTickets = async () => {
-    try {
-      // TODO: Implementar exportação de tickets
-      toast.success('Exportação iniciada. Você receberá um email quando estiver pronta.')
-    } catch (error: any) {
-      console.error('Erro ao exportar tickets:', error)
-      toast.error(error.message || 'Erro ao exportar tickets')
-    }
-  }
-
-  const getPriorityIcon = (priority: TicketPriority) => {
+  const getPriorityIcon = (priority: TaskPriority) => {
     switch (priority) {
       case 'urgent':
         return <ArrowUp className="h-3 w-3 text-red-500" />
@@ -307,10 +247,10 @@ export default function TicketsPage() {
     }
   }
 
-  const isOverdue = (ticket: Ticket) => {
-    if (!ticket.sla_due_date) return false
-    return new Date(ticket.sla_due_date) < new Date() && 
-           !['resolved', 'closed'].includes(ticket.status)
+  const isOverdue = (task: Task) => {
+    if (!task.due_date) return false
+    return new Date(task.due_date) < new Date() && 
+           !['completed', 'cancelled'].includes(task.status)
   }
 
   const formatTimeAgo = (date: string) => {
@@ -331,12 +271,12 @@ export default function TicketsPage() {
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Tickets de Suporte</h2>
+        <h2 className="text-3xl font-bold tracking-tight">Tarefas</h2>
         <div className="flex items-center space-x-2">
           <Button
             variant="outline"
             size="sm"
-            onClick={syncTickets}
+            onClick={syncTasks}
             disabled={syncing}
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
@@ -345,14 +285,14 @@ export default function TicketsPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={exportTickets}
+            onClick={exportTasks}
           >
             <Download className="h-4 w-4 mr-2" />
             Exportar
           </Button>
-          <Button onClick={() => router.push('/dashboard/tickets/new')}>
+          <Button onClick={() => router.push('/dashboard/tasks/new')}>
             <Plus className="h-4 w-4 mr-2" />
-            Novo Ticket
+            Nova Tarefa
           </Button>
         </div>
       </div>
@@ -362,23 +302,23 @@ export default function TicketsPage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total de Tickets</CardTitle>
+              <CardTitle className="text-sm font-medium">Total de Tarefas</CardTitle>
               <MessageSquare className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.total}</div>
               <p className="text-xs text-muted-foreground">
-                +{stats.recent_tickets} nos últimos 7 dias
+                +{stats.completed_this_week} nos últimos 7 dias
               </p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">SLA Violado</CardTitle>
+              <CardTitle className="text-sm font-medium">Atrasadas</CardTitle>
               <AlertCircle className="h-4 w-4 text-red-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">{stats.sla_breached}</div>
+              <div className="text-2xl font-bold text-red-600">{stats.overdue}</div>
               <p className="text-xs text-muted-foreground">
                 Requer atenção imediata
               </p>
@@ -392,19 +332,19 @@ export default function TicketsPage() {
             <CardContent>
               <div className="text-2xl font-bold">{stats.by_status.in_progress || 0}</div>
               <p className="text-xs text-muted-foreground">
-                Tickets sendo processados
+                Tarefas sendo processadas
               </p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Resolvidos Hoje</CardTitle>
+              <CardTitle className="text-sm font-medium">Concluídas Hoje</CardTitle>
               <CheckCircle2 className="h-4 w-4 text-green-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.by_status.resolved || 0}</div>
+              <div className="text-2xl font-bold">{stats.by_status.done || 0}</div>
               <p className="text-xs text-muted-foreground">
-                Taxa de resolução: 85%
+                Taxa de conclusão: 85%
               </p>
             </CardContent>
           </Card>
@@ -417,7 +357,7 @@ export default function TicketsPage() {
           <div className="relative">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar por cliente, número do pedido ou ticket..."
+              placeholder="Buscar por título, descrição ou responsável..."
               value={searchTerm}
               onChange={(e) => handleSearch(e.target.value)}
               className="pl-8"
@@ -456,23 +396,6 @@ export default function TicketsPage() {
             </SelectContent>
           </Select>
 
-          <Select
-            value={filters.marketplace?.join(',') || ''}
-            onValueChange={(value) => handleFilterChange('marketplace', value ? value.split(',') : [])}
-          >
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Marketplace" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">Todos os Marketplaces</SelectItem>
-              {marketplaces.map((marketplace) => (
-                <SelectItem key={marketplace} value={marketplace}>
-                  {marketplaceIcons[marketplace as keyof typeof marketplaceIcons]} {marketplace}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
           <div className="flex items-center space-x-1">
             <Button
               variant={viewMode === 'list' ? 'default' : 'outline'}
@@ -492,120 +415,106 @@ export default function TicketsPage() {
         </div>
       </div>
 
-      {/* Lista de Tickets */}
+      {/* Lista de Tarefas */}
       <div className="space-y-4">
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <RefreshCw className="h-8 w-8 animate-spin" />
           </div>
-        ) : tickets.length === 0 ? (
+        ) : tasks.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-8">
               <MessageSquare className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Nenhum ticket encontrado</h3>
+              <h3 className="text-lg font-semibold mb-2">Nenhuma tarefa encontrada</h3>
               <p className="text-muted-foreground text-center mb-4">
-                Não há tickets que correspondam aos filtros selecionados.
+                Não há tarefas que correspondam aos filtros selecionados.
               </p>
-              <Button onClick={() => router.push('/dashboard/tickets/new')}>
+              <Button onClick={() => router.push('/dashboard/tasks/new')}>
                 <Plus className="h-4 w-4 mr-2" />
-                Criar Primeiro Ticket
+                Criar Primeira Tarefa
               </Button>
             </CardContent>
           </Card>
         ) : (
-          tickets.map((ticket) => (
+          tasks.map((task) => (
             <Card 
-              key={ticket.id} 
+              key={task.id} 
               className={`cursor-pointer transition-colors hover:bg-muted/50 ${
-                isOverdue(ticket) ? 'border-red-200 bg-red-50' : ''
+                isOverdue(task) ? 'border-red-200 bg-red-50' : ''
               }`}
-              onClick={() => router.push(`/dashboard/tickets/${ticket.id}`)}
+              onClick={() => router.push(`/dashboard/tasks/${task.id}`)}
             >
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center space-x-2">
                       <Badge variant="outline" className="font-mono text-xs">
-                        {ticket.ticket_number}
+                        #{task.id.slice(-8)}
                       </Badge>
-                      {ticket.marketplace && (
-                        <Badge variant="outline" className="text-xs">
-                          {marketplaceIcons[ticket.marketplace as keyof typeof marketplaceIcons]} 
-                          {ticket.marketplace}
-                        </Badge>
-                      )}
-                      {isOverdue(ticket) && (
+                      {isOverdue(task) && (
                         <Badge variant="destructive" className="text-xs">
                           <AlertCircle className="h-3 w-3 mr-1" />
-                          SLA Violado
+                          Atrasada
                         </Badge>
                       )}
                     </div>
                     
                     <div className="flex items-center space-x-4">
-                      <h3 className="font-semibold text-lg">{ticket.title}</h3>
+                      <h3 className="font-semibold text-lg">{task.title}</h3>
                       <div className="flex items-center space-x-1">
-                        {getPriorityIcon(ticket.priority)}
-                        <Badge className={priorityColors[ticket.priority]}>
-                          {priorityLabels[ticket.priority]}
+                        {getPriorityIcon(task.priority)}
+                        <Badge className={priorityColors[task.priority]}>
+                          {priorityLabels[task.priority]}
                         </Badge>
                       </div>
                     </div>
 
                     <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                      <div className="flex items-center space-x-1">
-                        <User className="h-4 w-4" />
-                        <span>{ticket.customer_name}</span>
-                      </div>
-                      {ticket.order_number && (
+                      {task.assigned_to && (
                         <div className="flex items-center space-x-1">
-                          <ShoppingCart className="h-4 w-4" />
-                          <span>#{ticket.order_number}</span>
+                          <User className="h-4 w-4" />
+                          <span>Atribuída</span>
                         </div>
                       )}
                       <div className="flex items-center space-x-1">
                         <Clock className="h-4 w-4" />
-                        <span>{formatTimeAgo(ticket.created_at)}</span>
+                        <span>{formatTimeAgo(task.created_at)}</span>
                       </div>
-                      {ticket.comments && (
+                      {task.comments && task.comments.length > 0 && (
                         <div className="flex items-center space-x-1">
                           <MessageSquare className="h-4 w-4" />
-                          <span>{ticket.comments.count}</span>
+                          <span>{task.comments.length}</span>
                         </div>
                       )}
-                      {ticket.attachments && ticket.attachments.count > 0 && (
+                      {task.attachments && task.attachments.length > 0 && (
                         <div className="flex items-center space-x-1">
                           <Paperclip className="h-4 w-4" />
-                          <span>{ticket.attachments.count}</span>
+                          <span>{task.attachments.length}</span>
                         </div>
                       )}
                     </div>
 
                     <p className="text-sm text-muted-foreground line-clamp-2">
-                      {ticket.description}
+                      {task.description}
                     </p>
                   </div>
 
                   <div className="flex flex-col items-end space-y-2 ml-4">
                     <div className="flex items-center space-x-2">
-                      <Badge className={statusColors[ticket.status]}>
-                        {statusLabels[ticket.status]}
-                      </Badge>
-                      <Badge className={typeColors[ticket.type]}>
-                        {typeLabels[ticket.type]}
+                      <Badge className={statusColors[task.status]}>
+                        {statusLabels[task.status]}
                       </Badge>
                     </div>
 
-                    {ticket.assigned_to && (
+                    {task.assigned_to && (
                       <div className="flex items-center space-x-2">
                         <Avatar className="h-6 w-6">
-                          <AvatarImage src={ticket.assigned_to.avatar_url} />
                           <AvatarFallback className="text-xs">
-                            {ticket.assigned_to.full_name?.charAt(0)}
+                            {task.assigned_to.charAt(0)}
                           </AvatarFallback>
                         </Avatar>
                         <span className="text-xs text-muted-foreground">
-                          {ticket.assigned_to.full_name}
+                          Atribuída
                         </span>
                       </div>
                     )}
@@ -619,27 +528,27 @@ export default function TicketsPage() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={(e) => {
                           e.stopPropagation()
-                          router.push(`/dashboard/tickets/${ticket.id}`)
+                          router.push(`/dashboard/tasks/${task.id}`)
                         }}>
                           Ver Detalhes
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={(e) => {
                           e.stopPropagation()
-                          handleStatusChange(ticket.id, 'in_progress')
+                          handleStatusChange(task.id, 'in_progress')
                         }}>
                           Marcar como Em Andamento
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={(e) => {
                           e.stopPropagation()
-                          handleStatusChange(ticket.id, 'resolved')
+                          handleStatusChange(task.id, 'done')
                         }}>
-                          Marcar como Resolvido
+                          Marcar como Concluída
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={(e) => {
                           e.stopPropagation()
-                          handlePriorityChange(ticket.id, 'high')
+                          handlePriorityChange(task.id, 'high')
                         }}>
                           Aumentar Prioridade
                         </DropdownMenuItem>

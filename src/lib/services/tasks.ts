@@ -9,6 +9,7 @@ import {
   TaskSearchResult,
   TaskComment,
   TaskActivity,
+  TaskAttachment,
   TaskTimeEntry,
   BulkTaskOperation,
   BulkTaskResult,
@@ -269,53 +270,13 @@ export class TaskService {
     }
   }
 
-  // Comentários
-  static async addComment(taskId: string, content: string): Promise<TaskComment> {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Usuário não autenticado')
-
-    const { data: comment, error } = await supabase
-      .from('task_comments')
-      .insert([{
-        task_id: taskId,
-        content,
-        created_by: user.id
-      }])
-      .select(`
-        *,
-        user:profiles(id, full_name, email, avatar_url)
-      `)
-      .single()
-
-    if (error) {
-      console.error('Erro ao adicionar comentário:', error)
-      throw new Error('Erro ao adicionar comentário')
-    }
-
-    // Registrar atividade
-    await this.createActivity(taskId, user.id, 'commented', 'Adicionou um comentário')
-
-    // Notificar responsável da tarefa
-    const task = await this.getTask(taskId)
-    if (task?.assigned_to && task.assigned_to !== user.id) {
-      await this.createNotification({
-        task_id: taskId,
-        user_id: task.assigned_to,
-        type: 'commented',
-        title: 'Novo comentário',
-        message: `${user.user_metadata?.full_name || user.email} comentou na tarefa: ${task.title}`
-      })
-    }
-
-    return comment
-  }
-
-  static async getComments(taskId: string): Promise<TaskComment[]> {
+  // Comments
+  static async getTaskComments(taskId: string): Promise<TaskComment[]> {
     const { data: comments, error } = await supabase
       .from('task_comments')
       .select(`
         *,
-        user:profiles(id, full_name, email, avatar_url)
+        creator:profiles!task_comments_created_by_fkey(id, full_name, email, avatar_url)
       `)
       .eq('task_id', taskId)
       .order('created_at', { ascending: true })
@@ -328,14 +289,54 @@ export class TaskService {
     return comments || []
   }
 
-  // Atividades
-  static async createActivity(
-    taskId: string, 
-    userId: string, 
-    action: string, 
-    description: string,
-    metadata?: Record<string, any>
-  ): Promise<void> {
+  static async createComment(taskId: string, content: string): Promise<TaskComment> {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Usuário não autenticado')
+
+    const { data: comment, error } = await supabase
+      .from('task_comments')
+      .insert([{
+        task_id: taskId,
+        content,
+        created_by: user.id
+      }])
+      .select(`
+        *,
+        creator:profiles!task_comments_created_by_fkey(id, full_name, email, avatar_url)
+      `)
+      .single()
+
+    if (error) {
+      console.error('Erro ao criar comentário:', error)
+      throw new Error('Erro ao criar comentário')
+    }
+
+    // Registrar atividade
+    await this.createActivity(taskId, user.id, 'commented', 'Comentário adicionado')
+
+    return comment
+  }
+
+  // Activities
+  static async getTaskActivities(taskId: string): Promise<TaskActivity[]> {
+    const { data: activities, error } = await supabase
+      .from('task_activities')
+      .select(`
+        *,
+        user:profiles!task_activities_user_id_fkey(id, full_name, email, avatar_url)
+      `)
+      .eq('task_id', taskId)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Erro ao buscar atividades:', error)
+      throw new Error('Erro ao buscar atividades')
+    }
+
+    return activities || []
+  }
+
+  static async createActivity(taskId: string, userId: string, action: string, description: string, metadata?: Record<string, any>): Promise<void> {
     const { error } = await supabase
       .from('task_activities')
       .insert([{
@@ -351,22 +352,117 @@ export class TaskService {
     }
   }
 
-  static async getActivities(taskId: string): Promise<TaskActivity[]> {
-    const { data: activities, error } = await supabase
-      .from('task_activities')
+  // Attachments
+  static async getTaskAttachments(taskId: string): Promise<TaskAttachment[]> {
+    const { data: attachments, error } = await supabase
+      .from('task_attachments')
       .select(`
         *,
-        user:profiles(id, full_name, email, avatar_url)
+        uploader:profiles!task_attachments_uploaded_by_fkey(id, full_name, email, avatar_url)
       `)
       .eq('task_id', taskId)
       .order('created_at', { ascending: false })
 
     if (error) {
-      console.error('Erro ao buscar atividades:', error)
-      throw new Error('Erro ao buscar atividades')
+      console.error('Erro ao buscar anexos:', error)
+      throw new Error('Erro ao buscar anexos')
     }
 
-    return activities || []
+    return attachments || []
+  }
+
+  static async uploadAttachment(taskId: string, file: File): Promise<TaskAttachment> {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Usuário não autenticado')
+
+    // Upload do arquivo
+    const fileName = `${Date.now()}-${file.name}`
+    const filePath = `tasks/${taskId}/${fileName}`
+
+    const { error: uploadError } = await supabase.storage
+      .from('attachments')
+      .upload(filePath, file)
+
+    if (uploadError) {
+      console.error('Erro ao fazer upload:', uploadError)
+      throw new Error('Erro ao fazer upload do arquivo')
+    }
+
+    // Obter URL pública
+    const { data: { publicUrl } } = supabase.storage
+      .from('attachments')
+      .getPublicUrl(filePath)
+
+    // Salvar no banco
+    const { data: attachment, error } = await supabase
+      .from('task_attachments')
+      .insert([{
+        task_id: taskId,
+        file_name: file.name,
+        file_url: publicUrl,
+        file_size: file.size,
+        file_type: file.type,
+        uploaded_by: user.id
+      }])
+      .select(`
+        *,
+        uploader:profiles!task_attachments_uploaded_by_fkey(id, full_name, email, avatar_url)
+      `)
+      .single()
+
+    if (error) {
+      console.error('Erro ao salvar anexo:', error)
+      throw new Error('Erro ao salvar anexo')
+    }
+
+    // Registrar atividade
+    await this.createActivity(taskId, user.id, 'attachment_added', `Anexo adicionado: ${file.name}`)
+
+    return attachment
+  }
+
+  static async deleteAttachment(attachmentId: string): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Usuário não autenticado')
+
+    // Buscar anexo para obter informações
+    const { data: attachment, error: fetchError } = await supabase
+      .from('task_attachments')
+      .select('*')
+      .eq('id', attachmentId)
+      .single()
+
+    if (fetchError) {
+      console.error('Erro ao buscar anexo:', fetchError)
+      throw new Error('Anexo não encontrado')
+    }
+
+    // Extrair caminho do arquivo da URL
+    const url = new URL(attachment.file_url)
+    const filePath = url.pathname.split('/').slice(-3).join('/')
+
+    // Deletar arquivo do storage
+    const { error: deleteStorageError } = await supabase.storage
+      .from('attachments')
+      .remove([filePath])
+
+    if (deleteStorageError) {
+      console.error('Erro ao deletar arquivo:', deleteStorageError)
+    }
+
+    // Deletar registro do banco
+    const { error: deleteError } = await supabase
+      .from('task_attachments')
+      .delete()
+      .eq('id', attachmentId)
+
+    if (deleteError) {
+      console.error('Erro ao deletar anexo:', deleteError)
+      throw new Error('Erro ao deletar anexo')
+    }
+
+    // Registrar atividade
+    await this.createActivity(attachment.task_id, user.id, 'attachment_removed', `Anexo removido: ${attachment.file_name}`)
   }
 
   // Estatísticas
@@ -506,7 +602,7 @@ export class TaskService {
         result.failed++
         result.errors.push({
           task_id: taskId,
-          error: error.message
+          error: error instanceof Error ? error.message : String(error)
         })
       }
     }

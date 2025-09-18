@@ -95,7 +95,7 @@ const priorityLabels = {
 export default function TaskDetailPage() {
   const router = useRouter()
   const params = useParams()
-  const taskId = params.id as string
+  const taskId = params?.id as string
 
   const [task, setTask] = useState<Task | null>(null)
   const [comments, setComments] = useState<TaskComment[]>([])
@@ -167,7 +167,7 @@ export default function TaskDetailPage() {
 
     try {
       setSubmittingComment(true)
-      const newComment = await TaskService.addComment(task.id, commentText.trim())
+      const newComment = await TaskService.createComment(task.id, commentText.trim())
       setComments(prev => [newComment, ...prev])
       setCommentText('')
       toast.success('Comentário adicionado!')
@@ -559,7 +559,7 @@ export default function TaskDetailPage() {
                           <div className="flex items-center gap-3">
                             <FileText className="h-8 w-8 text-gray-500" />
                             <div>
-                              <p className="font-medium">{attachment.filename}</p>
+                              <p className="font-medium">{attachment.file_name}</p>
                               <p className="text-sm text-gray-500">
                                 {formatFileSize(attachment.file_size)}
                               </p>

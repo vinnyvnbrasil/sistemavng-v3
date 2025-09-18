@@ -65,6 +65,8 @@ export default function DashboardHeader({ user, profile }: DashboardHeaderProps)
   }
 
   const generateBreadcrumbs = () => {
+    if (!pathname) return []
+    
     const pathSegments = pathname.split('/').filter(Boolean)
     const breadcrumbs = []
     

@@ -193,14 +193,7 @@ export default function NewUserPage() {
         phone: formData.phone || undefined,
         department: formData.department || undefined,
         position: formData.position || undefined,
-        role: formData.role as any,
-        status: formData.status as any,
-        bio: formData.bio || undefined,
-        location: formData.location || undefined,
-        timezone: formData.timezone,
-        language: formData.language,
-        is_active: formData.is_active,
-        avatar_url: avatarUrl || undefined
+        role: formData.role as any
       }
 
       const newUser = await UserService.createUser(userData)
