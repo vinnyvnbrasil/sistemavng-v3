@@ -505,8 +505,8 @@ export class OrdersService {
         throw new Error(`Erro ao buscar marketplaces: ${error instanceof Error ? error.message : String(error)}`);
       }
 
-      const marketplaces = [...new Set(data.map(item => item.marketplace))];
-      return marketplaces.filter(Boolean);
+      const marketplaces = [...new Set(data.map((item: any) => item.marketplace))];
+      return marketplaces.filter(Boolean) as string[];
     } catch (error) {
       console.error('Erro ao buscar marketplaces:', error);
       throw error;

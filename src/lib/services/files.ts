@@ -92,7 +92,7 @@ export class FileService {
 
       if (error) throw error
 
-      return data.map(file => ({
+      return data.map((file: any) => ({
         ...file,
         uploader_name: file.uploader?.full_name || 'Usuário Desconhecido',
         uploader_avatar: file.uploader?.avatar_url,
@@ -409,7 +409,7 @@ export class FileService {
 
       if (error) throw error
 
-      return data.map(folder => ({
+      return data.map((folder: any) => ({
         ...folder,
         creator_name: folder.creator?.full_name || 'Usuário Desconhecido',
         creator_avatar: folder.creator?.avatar_url,
@@ -515,18 +515,18 @@ export class FileService {
         .eq('status', 'ready')
 
       const totalFiles = files?.length || 0
-      const totalSize = files?.reduce((sum, file) => sum + file.size, 0) || 0
+      const totalSize = files?.reduce((sum: any, file: any) => sum + file.size, 0) || 0
 
       // Files by type
       const typeMap = new Map()
-      files?.forEach(file => {
+      files?.forEach((file: any) => {
         const current = typeMap.get(file.type) || { count: 0, size: 0 }
         current.count++
         current.size += file.size
         typeMap.set(file.type, current)
       })
 
-      const filesByType = Array.from(typeMap.entries()).map(([type, stats]) => ({
+      const filesByType = Array.from(typeMap.entries()).map(([type, stats]: any) => ({
         type,
         count: stats.count,
         total_size: stats.size,
@@ -551,7 +551,7 @@ export class FileService {
         const monthStart = new Date(date.getFullYear(), date.getMonth(), 1)
         const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0)
 
-        const monthFiles = files?.filter(file => {
+        const monthFiles = files?.filter((file: any) => {
           const uploadDate = new Date(file.uploaded_at)
           return uploadDate >= monthStart && uploadDate <= monthEnd
         }) || []
@@ -559,7 +559,7 @@ export class FileService {
         storageUsageByMonth.push({
           month: monthStart.toISOString().slice(0, 7),
           uploads: monthFiles.length,
-          size: monthFiles.reduce((sum, file) => sum + file.size, 0)
+          size: monthFiles.reduce((sum: any, file: any) => sum + file.size, 0)
         })
       }
 

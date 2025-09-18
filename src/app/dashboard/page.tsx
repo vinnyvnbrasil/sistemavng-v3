@@ -87,9 +87,9 @@ export default function DashboardPage() {
 
       setStats({
         totalProjects: projects.length,
-        activeProjects: projects.filter(p => p.status === 'active').length,
-        completedTasks: tasks.filter(t => t.status === 'completed').length,
-        pendingTasks: tasks.filter(t => t.status === 'pending').length,
+        activeProjects: projects.filter((p: Project) => p.status === 'active').length,
+        completedTasks: tasks.filter((t: Task) => t.status === 'completed').length,
+        pendingTasks: tasks.filter((t: Task) => t.status === 'pending').length,
         totalUsers: users.length,
         totalCompanies: companies.length
       })

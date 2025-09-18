@@ -328,7 +328,7 @@ export class ProjectService {
     const now = new Date()
     let totalProgress = 0
 
-    projects.forEach(project => {
+    projects.forEach((project: any) => {
       stats.by_status[project.status as keyof typeof stats.by_status]++
       stats.by_priority[project.priority as keyof typeof stats.by_priority]++
       totalProgress += project.progress

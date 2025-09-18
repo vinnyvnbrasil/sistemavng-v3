@@ -142,7 +142,7 @@ export class BackupService {
 
       if (error) throw error
 
-      const backups: Backup[] = (data || []).map(backup => ({
+      const backups: Backup[] = (data || []).map((backup: any) => ({
         ...backup,
         creator_name: backup.creator?.full_name,
         creator_avatar: backup.creator?.avatar_url,
@@ -372,7 +372,7 @@ export class BackupService {
 
       if (error) throw error
 
-      const schedules: BackupSchedule[] = (data || []).map(schedule => ({
+      const schedules: BackupSchedule[] = (data || []).map((schedule: any) => ({
         ...schedule,
         creator_name: schedule.creator?.full_name,
         creator_avatar: schedule.creator?.avatar_url,
@@ -526,7 +526,7 @@ export class BackupService {
 
       if (error) throw error
 
-      const restoreJobs: RestoreJob[] = (data || []).map(job => ({
+      const restoreJobs: RestoreJob[] = (data || []).map((job: any) => ({
         ...job,
         backup_name: job.backup?.name,
         backup_type: job.backup?.type,
@@ -647,10 +647,10 @@ export class BackupService {
       const failedBackups = failedResult.count || 0
 
       const sizeData = sizeResult.data || []
-      const totalSize = sizeData.reduce((sum, backup) => sum + backup.size, 0)
-      const compressedSize = sizeData.reduce((sum, backup) => sum + (backup.compressed_size || backup.size), 0)
+      const totalSize = sizeData.reduce((sum: any, backup: any) => sum + backup.size, 0)
+      const compressedSize = sizeData.reduce((sum: any, backup: any) => sum + (backup.compressed_size || backup.size), 0)
       
-      const averageBackupTime = sizeData.reduce((sum, backup) => {
+      const averageBackupTime = sizeData.reduce((sum: any, backup: any) => {
         const duration = backup.metadata?.backup_duration || 0
         return sum + duration
       }, 0) / (sizeData.length || 1)
@@ -703,9 +703,9 @@ export class BackupService {
         retention_savings: totalSize - compressedSize,
         compression_savings: totalSize > 0 ? Math.round(((totalSize - compressedSize) / totalSize) * 100) : 0,
         oldest_backup_date: undefined,
-        largest_backup_size: Math.max(...sizeData.map(b => b.size), 0),
-        fastest_backup_time: Math.min(...sizeData.map(b => b.metadata?.backup_duration || 0).filter(d => d > 0), 0),
-        slowest_backup_time: Math.max(...sizeData.map(b => b.metadata?.backup_duration || 0), 0)
+        largest_backup_size: Math.max(...sizeData.map((b: any) => b.size), 0),
+        fastest_backup_time: Math.min(...sizeData.map((b: any) => b.metadata?.backup_duration || 0).filter((d: any) => d > 0), 0),
+        slowest_backup_time: Math.max(...sizeData.map((b: any) => b.metadata?.backup_duration || 0), 0)
       }
     } catch (error) {
       console.error('Erro ao buscar estatísticas:', error)
@@ -738,14 +738,14 @@ export class BackupService {
       const failedRestores = failedResult.count || 0
 
       const restoreData = dataResult.data || []
-      const totalDataRestored = restoreData.reduce((sum, job) => sum + job.bytes_restored, 0)
-      const averageFilesRestored = restoreData.reduce((sum, job) => sum + job.files_restored, 0) / (restoreData.length || 1)
+      const totalDataRestored = restoreData.reduce((sum: any, job: any) => sum + job.bytes_restored, 0)
+      const averageFilesRestored = restoreData.reduce((sum: any, job: any) => sum + job.files_restored, 0) / (restoreData.length || 1)
       
       const restoreTimes = restoreData
-        .filter(job => job.started_at && job.completed_at)
-        .map(job => Math.floor((new Date(job.completed_at).getTime() - new Date(job.started_at).getTime()) / 1000))
+        .filter((job: any) => job.started_at && job.completed_at)
+        .map((job: any) => Math.floor((new Date(job.completed_at).getTime() - new Date(job.started_at).getTime()) / 1000))
       
-      const averageRestoreTime = restoreTimes.reduce((sum, time) => sum + time, 0) / (restoreTimes.length || 1)
+      const averageRestoreTime = restoreTimes.reduce((sum: any, time: any) => sum + time, 0) / (restoreTimes.length || 1)
 
       // Get latest restore
       const { data: latestRestore } = await supabase

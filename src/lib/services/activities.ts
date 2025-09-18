@@ -58,7 +58,7 @@ export class ActivityService {
 
       if (error) throw error
 
-      return data.map(activity => ({
+      return data.map((activity: any) => ({
         ...activity,
         user_name: activity.user?.full_name || 'Usuário Desconhecido',
         user_avatar: activity.user?.avatar_url
@@ -212,7 +212,7 @@ export class ActivityService {
         .gte('created_at', monthAgo.toISOString())
 
       const userActivityMap = new Map()
-      mostActiveUsers?.forEach(activity => {
+      mostActiveUsers?.forEach((activity: any) => {
         const userId = activity.user_id
         const user = Array.isArray(activity.user) ? activity.user[0] : activity.user
         const current = userActivityMap.get(userId) || {
@@ -236,7 +236,7 @@ export class ActivityService {
         .gte('created_at', monthAgo.toISOString())
 
       const typeMap = new Map()
-      activityByType?.forEach(activity => {
+      activityByType?.forEach((activity: any) => {
         const current = typeMap.get(activity.type) || 0
         typeMap.set(activity.type, current + 1)
       })
@@ -382,10 +382,10 @@ export class ActivityService {
 
       if (error) throw error
 
-      return projects.map(project => {
+      return projects.map((project: any) => {
         const totalTasks = project.tasks?.length || 0
-        const completedTasks = project.tasks?.filter(task => task.status === 'completed').length || 0
-        const overdueTasks = project.tasks?.filter(task => {
+        const completedTasks = project.tasks?.filter((task: any) => task.status === 'completed').length || 0
+        const overdueTasks = project.tasks?.filter((task: any) => {
           return task.status !== 'completed' && project.due_date && new Date(project.due_date) < new Date()
         }).length || 0
 
@@ -417,7 +417,7 @@ export class ActivityService {
       if (error) throw error
 
       const statusMap = new Map()
-      tasks?.forEach(task => {
+      tasks?.forEach((task: any) => {
         const current = statusMap.get(task.status) || 0
         statusMap.set(task.status, current + 1)
       })

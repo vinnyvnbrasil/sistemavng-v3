@@ -517,7 +517,7 @@ export class TaskService {
     let totalCompletionTime = 0
     let completedCount = 0
 
-    tasks.forEach(task => {
+    tasks.forEach((task: any) => {
       // Contar por status
       stats.by_status[task.status as keyof typeof stats.by_status]++
 
@@ -662,7 +662,7 @@ export class TaskService {
 
     if (!tasks) return summary
 
-    tasks.forEach(task => {
+    tasks.forEach((task: any) => {
       if (task.status === 'done') {
         summary.completed_tasks++
       } else if (task.status === 'in_progress') {

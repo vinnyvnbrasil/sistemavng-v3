@@ -117,7 +117,7 @@ export class NotificationService {
 
       if (error) throw error
 
-      const notifications: Notification[] = (data || []).map(notification => ({
+      const notifications: Notification[] = (data || []).map((notification: any) => ({
         ...notification,
         sender_name: notification.sender?.full_name,
         sender_avatar: notification.sender?.avatar_url,
@@ -437,7 +437,7 @@ export class NotificationService {
         .select('type')
         .eq('recipient_id', userId)
 
-      const typeStats = typeData?.reduce((acc, notification) => {
+      const typeStats = typeData?.reduce((acc: any, notification: any) => {
         acc[notification.type] = (acc[notification.type] || 0) + 1
         return acc
       }, {} as Record<string, number>) || {}
@@ -445,8 +445,8 @@ export class NotificationService {
       const totalNotifications = totalResult.count || 0
       const notificationsByType = Object.entries(typeStats).map(([type, count]) => ({
         type: type as NotificationType,
-        count,
-        percentage: totalNotifications > 0 ? Math.round((count / totalNotifications) * 100) : 0
+        count: count as number,
+        percentage: totalNotifications > 0 ? Math.round(((count as number) / totalNotifications) * 100) : 0
       }))
 
       // Get notifications by priority
@@ -455,15 +455,15 @@ export class NotificationService {
         .select('priority')
         .eq('recipient_id', userId)
 
-      const priorityStats = priorityData?.reduce((acc, notification) => {
+      const priorityStats = priorityData?.reduce((acc: any, notification: any) => {
         acc[notification.priority] = (acc[notification.priority] || 0) + 1
         return acc
       }, {} as Record<string, number>) || {}
 
       const notificationsByPriority = Object.entries(priorityStats).map(([priority, count]) => ({
         priority: priority as NotificationPriority,
-        count,
-        percentage: totalNotifications > 0 ? Math.round((count / totalNotifications) * 100) : 0
+        count: count as number,
+        percentage: totalNotifications > 0 ? Math.round(((count as number) / totalNotifications) * 100) : 0
       }))
 
       return {

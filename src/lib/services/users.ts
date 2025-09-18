@@ -714,16 +714,16 @@ export class UserService {
       if (usersError) throw usersError
 
       const totalUsers = users?.length || 0
-      const activeUsers = users?.filter(u => u.is_active).length || 0
+      const activeUsers = users?.filter((u: any) => u.is_active).length || 0
 
       // Agrupar por papel
-      const usersByRole = users?.reduce((acc, user) => {
+      const usersByRole = users?.reduce((acc: any, user: any) => {
         acc[user.role] = (acc[user.role] || 0) + 1
         return acc
       }, {} as Record<string, number>) || {}
 
       // Agrupar por status
-      const usersByStatus = users?.reduce((acc, user) => {
+      const usersByStatus = users?.reduce((acc: any, user: any) => {
         acc[user.status] = (acc[user.status] || 0) + 1
         return acc
       }, {} as Record<string, number>) || {}
@@ -733,7 +733,7 @@ export class UserService {
       thisMonth.setDate(1)
       thisMonth.setHours(0, 0, 0, 0)
       
-      const newUsersThisMonth = users?.filter(u => 
+      const newUsersThisMonth = users?.filter((u: any) => 
         new Date(u.created_at) >= thisMonth
       ).length || 0
 
@@ -767,10 +767,10 @@ export class UserService {
       if (error) throw error
 
       const totalTeams = teams?.length || 0
-      const activeTeams = teams?.filter(t => t.is_active).length || 0
+      const activeTeams = teams?.filter((t: any) => t.is_active).length || 0
 
       // Agrupar por departamento
-      const teamsByDepartment = teams?.reduce((acc, team) => {
+      const teamsByDepartment = teams?.reduce((acc: any, team: any) => {
         if (team.department) {
           acc[team.department] = (acc[team.department] || 0) + 1
         }
@@ -779,11 +779,11 @@ export class UserService {
 
       // Tamanho médio das equipes
       const averageTeamSize = teams?.length > 0 
-        ? teams.reduce((sum, team) => sum + (team.member_count || 0), 0) / teams.length
+        ? teams.reduce((sum: any, team: any) => sum + (team.member_count || 0), 0) / teams.length
         : 0
 
       // Maior equipe
-      const largestTeam = teams?.reduce((largest, team) => {
+      const largestTeam = teams?.reduce((largest: any, team: any) => {
         return (team.member_count || 0) > (largest?.member_count || 0) ? team : largest
       }, teams[0]) || null
 

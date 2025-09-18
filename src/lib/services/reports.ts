@@ -55,7 +55,7 @@ export class ReportService {
 
       if (error) throw error
 
-      return data.map(report => ({
+      return data.map((report: any) => ({
         ...report,
         creator_name: report.creator?.full_name || 'Usuário Desconhecido',
         creator_avatar: report.creator?.avatar_url

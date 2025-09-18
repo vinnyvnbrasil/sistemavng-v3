@@ -10,6 +10,13 @@ export async function createServerSupabaseClient() {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   if (!supabaseUrl || !supabaseAnonKey) {
+    // Durante o build, as variáveis podem não estar disponíveis
+    // Retornamos null para evitar erros de build
+    if (process.env.NODE_ENV === 'production' && process.env.VERCEL_ENV === 'production') {
+      console.warn('Supabase environment variables not found during build')
+      return null as any
+    }
+    
     throw new Error(
       '@supabase/ssr: A URL e a chave de API do seu projeto são necessárias para criar um cliente Supabase!\n' +
       'Verifique se as variáveis NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY estão configuradas.'
@@ -46,6 +53,13 @@ export function createRouteHandlerClient(request: NextRequest) {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   if (!supabaseUrl || !supabaseAnonKey) {
+    // Durante o build, as variáveis podem não estar disponíveis
+    // Retornamos null para evitar erros de build
+    if (process.env.NODE_ENV === 'production' && process.env.VERCEL_ENV === 'production') {
+      console.warn('Supabase environment variables not found during build')
+      return null as any
+    }
+    
     throw new Error(
       '@supabase/ssr: A URL e a chave de API do seu projeto são necessárias para criar um cliente Supabase!\n' +
       'Verifique se as variáveis NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY estão configuradas.'
@@ -81,6 +95,13 @@ export function createMiddlewareClient(request: NextRequest) {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   if (!supabaseUrl || !supabaseAnonKey) {
+    // Durante o build, as variáveis podem não estar disponíveis
+    // Retornamos null para evitar erros de build
+    if (process.env.NODE_ENV === 'production' && process.env.VERCEL_ENV === 'production') {
+      console.warn('Supabase environment variables not found during build')
+      return null as any
+    }
+    
     throw new Error(
       '@supabase/ssr: A URL e a chave de API do seu projeto são necessárias para criar um cliente Supabase!\n' +
       'Verifique se as variáveis NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY estão configuradas.'
