@@ -93,7 +93,7 @@ const categoryIcons = {
   [AuditCategory.SECURITY]: AlertTriangle,
   [AuditCategory.COMPLIANCE]: CheckCircle,
   [AuditCategory.PERFORMANCE]: Zap
-}
+} as const
 
 export default function AuditPage() {
   const [activeTab, setActiveTab] = useState('logs')
