@@ -45,10 +45,23 @@ import {
 } from '@/types/auth'
 import { ActivityService } from './activities'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+// Função para criar cliente Supabase com validação robusta
+function createSupabaseClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl) {
+    throw new Error('NEXT_PUBLIC_SUPABASE_URL é obrigatório')
+  }
+
+  if (!supabaseAnonKey) {
+    throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY é obrigatório')
+  }
+
+  return createClient(supabaseUrl, supabaseAnonKey)
+}
+
+const supabase = createSupabaseClient()
 
 export class AuthService {
   constructor() {
