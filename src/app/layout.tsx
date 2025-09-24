@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import './globals.css'
+import { ThemeProvider } from '@/components/ui/theme-provider'
 import { Toaster } from 'sonner'
 import './globals.css'
 
@@ -25,10 +27,17 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body className={`${inter.className} antialiased`}>
-        <div className="min-h-screen bg-background">
-          {children}
-        </div>
-        <Toaster richColors position="top-right" />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <div className="min-h-screen bg-background">
+            {children}
+          </div>
+          <Toaster richColors position="top-right" />
+        </ThemeProvider>
       </body>
     </html>
   )

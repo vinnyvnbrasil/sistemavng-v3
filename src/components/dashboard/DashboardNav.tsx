@@ -29,7 +29,9 @@ import {
   LogOut,
   Menu,
   User,
-  Activity
+  Activity,
+  MessageSquare,
+  Bell
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
@@ -46,6 +48,10 @@ const navigation = [
   { name: 'Suporte', href: '/dashboard/tasks', icon: CheckSquare },
   { name: 'Equipe', href: '/dashboard/teams', icon: Users },
   { name: 'Atividades', href: '/dashboard/activities', icon: Activity },
+  { name: 'Analytics', href: '/dashboard/analytics', icon: Activity },
+  { name: 'Tickets', href: '/dashboard/tickets', icon: MessageSquare },
+  { name: 'Notificações', href: '/dashboard/notifications', icon: Bell },
+    { name: 'Configurações', href: '/dashboard/settings', icon: Settings },
 ]
 
 export default function DashboardNav({ user, profile }: DashboardNavProps) {
@@ -110,7 +116,7 @@ export default function DashboardNav({ user, profile }: DashboardNavProps) {
               )}
             >
               <Icon className="w-5 h-5 mr-3" />
-              {item.name}
+              <span className="hidden lg:block">{item.name}</span>
             </Link>
           )
         })}
