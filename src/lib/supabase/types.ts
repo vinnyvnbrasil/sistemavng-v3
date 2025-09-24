@@ -40,47 +40,44 @@ export interface Database {
         Row: {
           id: string
           name: string
-          description: string | null
-          logo_url: string | null
-          website: string | null
+          cnpj: string | null
+          email: string | null
           phone: string | null
           address: string | null
           city: string | null
           state: string | null
-          country: string
-          postal_code: string | null
+          zip_code: string | null
           created_at: string
           updated_at: string
+          user_id: string
         }
         Insert: {
           id?: string
           name: string
-          description?: string | null
-          logo_url?: string | null
-          website?: string | null
+          cnpj?: string | null
+          email?: string | null
           phone?: string | null
           address?: string | null
           city?: string | null
           state?: string | null
-          country?: string
-          postal_code?: string | null
+          zip_code?: string | null
           created_at?: string
           updated_at?: string
+          user_id: string
         }
         Update: {
           id?: string
           name?: string
-          description?: string | null
-          logo_url?: string | null
-          website?: string | null
+          cnpj?: string | null
+          email?: string | null
           phone?: string | null
           address?: string | null
           city?: string | null
           state?: string | null
-          country?: string
-          postal_code?: string | null
+          zip_code?: string | null
           created_at?: string
           updated_at?: string
+          user_id?: string
         }
       }
       projects: {

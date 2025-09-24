@@ -766,7 +766,7 @@ export default function SecurityPage() {
             <CardContent className="space-y-4">
               {/* Filters */}
               <div className="flex items-center space-x-4">
-                <Select value={eventFilter.type as string} onValueChange={(value) => setEventFilter({ ...eventFilter, type: value as SecurityEventType })}>
+                <Select value={(eventFilter.type as string) || 'all'} onValueChange={(value) => setEventFilter({ ...eventFilter, type: value as SecurityEventType })}>
                   <SelectTrigger className="w-48">
                     <SelectValue placeholder="Filtrar por tipo" />
                   </SelectTrigger>
@@ -779,7 +779,7 @@ export default function SecurityPage() {
                   </SelectContent>
                 </Select>
 
-                <Select value={eventSort.field} onValueChange={(value) => setEventSort({ ...eventSort, field: value as any })}>
+                <Select value={eventSort.field || 'created_at'} onValueChange={(value) => setEventSort({ ...eventSort, field: value as any })}>
                   <SelectTrigger className="w-48">
                     <SelectValue placeholder="Ordenar por" />
                   </SelectTrigger>

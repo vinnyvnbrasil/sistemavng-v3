@@ -282,7 +282,7 @@ export default function ActivitiesPage() {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Tipo de Atividade</label>
-              <Select value={selectedActivityType} onValueChange={setSelectedActivityType}>
+              <Select value={selectedActivityType || 'all'} onValueChange={setSelectedActivityType}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -296,7 +296,7 @@ export default function ActivitiesPage() {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Entidade</label>
-              <Select value={selectedEntityType} onValueChange={setSelectedEntityType}>
+              <Select value={selectedEntityType || 'all'} onValueChange={setSelectedEntityType}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -310,7 +310,7 @@ export default function ActivitiesPage() {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Período</label>
-              <Select value={dateRange} onValueChange={setDateRange}>
+              <Select value={dateRange || '7'} onValueChange={setDateRange}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -325,7 +325,7 @@ export default function ActivitiesPage() {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Visualização</label>
-              <Select value={viewMode} onValueChange={(value: any) => setViewMode(value)}>
+              <Select value={viewMode || 'list'} onValueChange={(value: any) => setViewMode(value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

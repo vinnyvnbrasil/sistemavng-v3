@@ -34,7 +34,7 @@ export class OrdersService {
   ): Promise<{ data: Order[]; total: number; page: number; limit: number }> {
     try {
       let query = this.supabase
-        .from('orders')
+        .from('projects')
         .select('*', { count: 'exact' })
         .eq('company_id', companyId)
         .order('created_at', { ascending: false });
@@ -99,7 +99,7 @@ export class OrdersService {
 
       if (error) {
         console.error('Erro ao buscar pedidos:', error);
-        throw new Error(`Erro ao buscar pedidos: ${error instanceof Error ? error.message : String(error)}`);
+        throw new Error(`Erro ao buscar pedidos: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
       }
 
       return {
@@ -110,14 +110,17 @@ export class OrdersService {
       };
     } catch (error) {
       console.error('Erro no serviço de pedidos:', error);
-      throw error;
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error(`Erro no serviço de pedidos: ${JSON.stringify(error)}`);
     }
   }
 
-  async getOrderById(orderId: string): Promise<Order | null> {
+  async getOrder(orderId: string): Promise<Order | null> {
     try {
       const { data, error } = await this.supabase
-        .from('orders')
+        .from('projects')
         .select('*')
         .eq('id', orderId)
         .single();
@@ -126,38 +129,120 @@ export class OrdersService {
         if (error.code === 'PGRST116') {
           return null; // Pedido não encontrado
         }
-        throw new Error(`Erro ao buscar pedido: ${error instanceof Error ? error.message : String(error)}`);
+        throw new Error(`Erro ao buscar pedido: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
       }
 
       return data;
     } catch (error) {
       console.error('Erro ao buscar pedido por ID:', error);
-      throw error;
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error(`Erro ao buscar pedido por ID: ${JSON.stringify(error)}`);
     }
   }
 
   async getOrderStats(companyId: string): Promise<OrderStats> {
     try {
-      const { data, error } = await this.supabase
-        .rpc('get_order_stats', { company_uuid: companyId });
+      // Buscar todos os pedidos da empresa
+      const { data: orders, error } = await this.supabase
+        .from('projects')
+        .select('*')
+        .eq('company_id', companyId);
 
       if (error) {
-        throw new Error(`Erro ao buscar estatísticas: ${error instanceof Error ? error.message : String(error)}`);
+        throw new Error(`Erro ao buscar estatísticas: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
       }
 
-      return data || {
-        total: 0,
-        total_amount: 0,
-        by_status: {},
-        by_marketplace: {},
-        recent_orders: 0,
-        average_order_value: 0,
-        top_customers: [],
-        monthly_revenue: []
+      if (!orders || orders.length === 0) {
+        return {
+          total: 0,
+          total_amount: 0,
+          by_status: {},
+          by_marketplace: {},
+          recent_orders: 0,
+          average_order_value: 0,
+          top_customers: [],
+          monthly_revenue: []
+        };
+      }
+
+      // Calcular estatísticas
+      const total = orders.length;
+      const totalAmount = orders.reduce((sum, order) => sum + (order.total_amount || 0), 0);
+      const averageOrderValue = total > 0 ? totalAmount / total : 0;
+
+      // Agrupar por status
+      const byStatus: Record<string, number> = {};
+      orders.forEach(order => {
+        const status = order.status || 'unknown';
+        byStatus[status] = (byStatus[status] || 0) + 1;
+      });
+
+      // Agrupar por marketplace
+      const byMarketplace: Record<string, number> = {};
+      orders.forEach(order => {
+        const marketplace = order.marketplace || 'Não informado';
+        byMarketplace[marketplace] = (byMarketplace[marketplace] || 0) + 1;
+      });
+
+      // Pedidos recentes (últimos 7 dias)
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const recentOrders = orders.filter(order => 
+        new Date(order.created_at) >= sevenDaysAgo
+      ).length;
+
+      // Top clientes (simplificado)
+      const customerStats: Record<string, { name: string; orders: number; total: number }> = {};
+      orders.forEach(order => {
+        const customerName = order.customer_name || 'Cliente não informado';
+        if (!customerStats[customerName]) {
+          customerStats[customerName] = { name: customerName, orders: 0, total: 0 };
+        }
+        customerStats[customerName].orders += 1;
+        customerStats[customerName].total += order.total_amount || 0;
+      });
+
+      const topCustomers = Object.values(customerStats)
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 5);
+
+      // Receita mensal (últimos 12 meses)
+      const monthlyRevenue: Array<{ month: string; revenue: number }> = [];
+      for (let i = 11; i >= 0; i--) {
+        const date = new Date();
+        date.setMonth(date.getMonth() - i);
+        const monthKey = date.toISOString().substring(0, 7); // YYYY-MM
+        
+        const monthOrders = orders.filter(order => 
+          order.created_at && order.created_at.substring(0, 7) === monthKey
+        );
+        
+        const revenue = monthOrders.reduce((sum, order) => sum + (order.total_amount || 0), 0);
+        
+        monthlyRevenue.push({
+          month: monthKey,
+          revenue
+        });
+      }
+
+      return {
+        total,
+        total_amount: totalAmount,
+        by_status: byStatus,
+        by_marketplace: byMarketplace,
+        recent_orders: recentOrders,
+        average_order_value: averageOrderValue,
+        top_customers: topCustomers,
+        monthly_revenue: monthlyRevenue
       };
     } catch (error) {
       console.error('Erro ao buscar estatísticas:', error);
-      throw error;
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error(`Erro ao buscar estatísticas: ${JSON.stringify(error)}`);
     }
   }
 
@@ -201,7 +286,7 @@ export class OrdersService {
       };
 
       const { data, error } = await this.supabase
-        .from('orders')
+        .from('projects')
         .insert(orderToInsert)
         .select()
         .single();
@@ -220,7 +305,7 @@ export class OrdersService {
   async updateOrder(orderId: string, updateData: UpdateOrderData): Promise<Order> {
     try {
       const { data, error } = await this.supabase
-        .from('orders')
+        .from('projects')
         .update({
           ...updateData,
           updated_at: new Date().toISOString()
@@ -243,7 +328,7 @@ export class OrdersService {
   async deleteOrder(orderId: string): Promise<void> {
     try {
       const { error } = await this.supabase
-        .from('orders')
+        .from('projects')
         .delete()
         .eq('id', orderId);
 
@@ -367,7 +452,7 @@ export class OrdersService {
     try {
       // Verificar se o pedido já existe
       const { data: existingOrder } = await this.supabase
-        .from('orders')
+        .from('projects')
         .select('id')
         .eq('bling_order_id', blingOrder.id.toString())
         .eq('company_id', companyId)
@@ -379,13 +464,13 @@ export class OrdersService {
       if (existingOrder) {
         // Atualizar pedido existente
         await this.supabase
-          .from('orders')
+          .from('projects')
           .update(orderData)
           .eq('id', existingOrder.id);
       } else {
         // Criar novo pedido
         await this.supabase
-          .from('orders')
+          .from('projects')
           .insert(orderData);
       }
     } catch (error) {
@@ -472,7 +557,7 @@ export class OrdersService {
       }
 
       const { data: ordersCount } = await this.supabase
-        .from('orders')
+        .from('projects')
         .select('id', { count: 'exact' })
         .eq('company_id', companyId);
 
@@ -496,40 +581,46 @@ export class OrdersService {
   async getMarketplaces(companyId: string): Promise<string[]> {
     try {
       const { data, error } = await this.supabase
-        .from('orders')
+        .from('projects')
         .select('marketplace')
         .eq('company_id', companyId)
         .not('marketplace', 'is', null);
 
       if (error) {
-        throw new Error(`Erro ao buscar marketplaces: ${error instanceof Error ? error.message : String(error)}`);
+        throw new Error(`Erro ao buscar marketplaces: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
       }
 
       const marketplaces = [...new Set(data.map((item: any) => item.marketplace))];
       return marketplaces.filter(Boolean) as string[];
     } catch (error) {
       console.error('Erro ao buscar marketplaces:', error);
-      throw error;
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error(`Erro ao buscar marketplaces: ${JSON.stringify(error)}`);
     }
   }
 
   async getRecentOrders(companyId: string, limit = 10): Promise<Order[]> {
     try {
       const { data, error } = await this.supabase
-        .from('orders')
+        .from('projects')
         .select('*')
         .eq('company_id', companyId)
         .order('created_at', { ascending: false })
         .limit(limit);
 
       if (error) {
-        throw new Error(`Erro ao buscar pedidos recentes: ${error instanceof Error ? error.message : String(error)}`);
+        throw new Error(`Erro ao buscar pedidos recentes: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
       }
 
       return data || [];
     } catch (error) {
       console.error('Erro ao buscar pedidos recentes:', error);
-      throw error;
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error(`Erro ao buscar pedidos recentes: ${JSON.stringify(error)}`);
     }
   }
 }

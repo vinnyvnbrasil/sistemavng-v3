@@ -25,8 +25,8 @@ interface DashboardHeaderProps {
 const pathNames: Record<string, string> = {
   '/dashboard': 'Dashboard',
   '/dashboard/companies': 'Empresas',
-  '/dashboard/projects': 'Projetos',
-  '/dashboard/tasks': 'Tarefas',
+  '/dashboard/projects': 'Pedidos',
+  '/dashboard/tasks': 'Suporte',
   '/dashboard/teams': 'Equipe',
   '/dashboard/activities': 'Atividades',
   '/dashboard/profile': 'Perfil',

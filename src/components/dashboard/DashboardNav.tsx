@@ -42,8 +42,8 @@ interface DashboardNavProps {
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
   { name: 'Empresas', href: '/companies', icon: Building2 },
-  { name: 'Projetos', href: '/dashboard/projects', icon: FolderOpen },
-  { name: 'Tarefas', href: '/dashboard/tasks', icon: CheckSquare },
+  { name: 'Pedidos', href: '/dashboard/projects', icon: FolderOpen },
+  { name: 'Suporte', href: '/dashboard/tasks', icon: CheckSquare },
   { name: 'Equipe', href: '/dashboard/teams', icon: Users },
   { name: 'Atividades', href: '/dashboard/activities', icon: Activity },
 ]

@@ -180,6 +180,9 @@ export interface CreateTeamData {
   color?: string
   department?: string
   manager_id?: string
+  company_id?: string
+  max_members?: number
+  is_active?: boolean
 }
 
 export interface UpdateTeamData {

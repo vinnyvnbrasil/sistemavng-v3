@@ -27,10 +27,12 @@ import {
   getOrderStatusIcon,
   getOrderPriority
 } from '@/types/orders';
+import { useAuth } from '@/hooks/use-auth';
 import { toast } from 'sonner';
 
 export default function OrdersPage() {
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [stats, setStats] = useState<OrderStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -44,7 +46,13 @@ export default function OrdersPage() {
   const [totalPages, setTotalPages] = useState(1);
   
   const ordersService = new OrdersService();
-  const companyId = 'temp-company-id'; // TODO: Obter do contexto de autenticação
+  
+  // Aguardar autenticação antes de prosseguir
+  if (authLoading || !user) {
+    return <div>Carregando...</div>;
+  }
+  
+  const companyId = user.company_id;
 
   useEffect(() => {
     loadOrders();
@@ -287,7 +295,7 @@ export default function OrdersPage() {
                 className="pl-8"
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={statusFilter || 'all'} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Filtrar por status" />
               </SelectTrigger>
@@ -298,7 +306,7 @@ export default function OrdersPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Select value={marketplaceFilter} onValueChange={setMarketplaceFilter}>
+            <Select value={marketplaceFilter || 'all'} onValueChange={setMarketplaceFilter}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Filtrar por marketplace" />
               </SelectTrigger>

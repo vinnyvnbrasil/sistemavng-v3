@@ -352,7 +352,10 @@ export class TicketsService {
       return stats;
     } catch (error) {
       console.error('Erro ao buscar estatísticas:', error);
-      throw new Error(`Erro ao buscar estatísticas: ${error instanceof Error ? error.message : String(error)}`);
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error(`Erro ao buscar estatísticas: ${JSON.stringify(error)}`);
     }
   }
 
@@ -370,7 +373,10 @@ export class TicketsService {
       return data || [];
     } catch (error) {
       console.error('Erro ao buscar configurações de marketplace:', error);
-      throw new Error(`Erro ao buscar configurações de marketplace: ${error instanceof Error ? error.message : String(error)}`);
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error(`Erro ao buscar configurações de marketplace: ${JSON.stringify(error)}`);
     }
   }
 

@@ -56,7 +56,25 @@ export default function NewTeamPage() {
         return
       }
 
-      await UserService.createTeam(formData, user.id)
+      // Buscar o perfil do usuário para obter o company_id
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .single()
+
+      if (profileError || !profile?.company_id) {
+        toast.error('Erro ao obter informações da empresa')
+        return
+      }
+
+      // Adicionar company_id aos dados da equipe
+      const teamDataWithCompany = {
+        ...formData,
+        company_id: profile.company_id
+      }
+
+      await UserService.createTeam(teamDataWithCompany, user.id)
       toast.success('Equipe criada com sucesso!')
       router.push('/dashboard/teams')
     } catch (error: any) {

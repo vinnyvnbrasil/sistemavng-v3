@@ -210,15 +210,15 @@ export default function DashboardPage() {
       href: '/dashboard/companies'
     },
     {
-      title: 'Projetos',
+      title: 'Pedidos',
       value: stats?.totalProjects || 0,
       icon: FolderOpen,
       color: 'text-green-600',
       bgColor: 'bg-green-50',
       href: '/dashboard/projects'
     },
-    {
-        title: 'Tarefas',
+        {
+        title: 'Suporte',
         value: (stats?.completedTasks || 0) + (stats?.pendingTasks || 0),
         icon: CheckCircle2,
         color: 'text-purple-600',
@@ -251,7 +251,7 @@ export default function DashboardPage() {
           <Button asChild>
             <Link href="/dashboard/projects/new">
               <Plus className="w-4 h-4 mr-2" />
-              Novo Projeto
+              Novo Pedido
             </Link>
           </Button>
         </div>
@@ -330,10 +330,10 @@ export default function DashboardPage() {
             ) : (
               <div className="text-center py-8">
                 <FolderOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600 mb-4">Nenhum projeto encontrado</p>
+                <p className="text-gray-600 mb-4">Nenhum pedido encontrado</p>
                 <Button asChild>
                   <Link href="/dashboard/projects/new">
-                    Criar primeiro projeto
+                    Criar primeiro pedido
                   </Link>
                 </Button>
               </div>
@@ -345,9 +345,9 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
-              <CardTitle className="text-xl">Tarefas Pendentes</CardTitle>
+              <CardTitle className="text-xl">Suporte Pendente</CardTitle>
               <CardDescription>
-                Suas próximas tarefas
+                Suas próximas tarefas de suporte
               </CardDescription>
             </div>
             <Button asChild variant="outline" size="sm">
@@ -366,7 +366,7 @@ export default function DashboardPage() {
                         {task.title}
                       </h4>
                       <p className="text-sm text-gray-600">
-                        {(task as any).projects?.name || 'Sem projeto'}
+                        {(task as any).projects?.name || 'Sem pedido'}
                       </p>
                       {task.due_date && (
                         <div className="flex items-center text-sm text-gray-500 mt-1">

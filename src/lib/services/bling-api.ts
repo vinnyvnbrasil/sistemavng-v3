@@ -315,7 +315,7 @@ export class BlingApiService {
     console.log('Saving order to database:', order.numero, 'for company:', companyId)
     
     // Example implementation:
-    // await supabase.from('orders').upsert({
+    // await supabase.from('projects').upsert({
     //   bling_order_id: order.id.toString(),
     //   company_id: companyId,
     //   order_number: order.numero,

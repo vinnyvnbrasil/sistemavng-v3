@@ -499,7 +499,7 @@ export default function ReportsPage() {
                     />
                   </div>
                 </div>
-                <Select value={selectedCategory} onValueChange={(value) => setSelectedCategory(value as ReportCategory | 'all')}>
+                <Select value={selectedCategory || 'all'} onValueChange={(value) => setSelectedCategory(value as ReportCategory | 'all')}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Categoria" />
                   </SelectTrigger>
@@ -510,7 +510,7 @@ export default function ReportsPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Select value={selectedStatus} onValueChange={(value) => setSelectedStatus(value as ReportStatus | 'all')}>
+                <Select value={selectedStatus || 'all'} onValueChange={(value) => setSelectedStatus(value as ReportStatus | 'all')}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>

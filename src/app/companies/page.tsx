@@ -25,7 +25,8 @@ import {
   AlertCircle,
   Search,
   ArrowLeft,
-  Home
+  Home,
+  Settings
 } from 'lucide-react'
 import type { Company, CompanyInsert, CompanyUpdate } from '@/lib/supabase/types'
 import { toast } from 'sonner'
@@ -40,14 +41,13 @@ export default function CompaniesPage() {
   const [editingCompany, setEditingCompany] = useState<Company | null>(null)
   const [formData, setFormData] = useState<CompanyInsert>({
     name: '',
-    description: '',
-    website: '',
+    cnpj: '',
+    email: '',
     phone: '',
     address: '',
     city: '',
     state: '',
-    country: 'Brasil',
-    postal_code: ''
+    zip_code: ''
   })
   
   const supabase = createClient()
@@ -89,14 +89,13 @@ export default function CompaniesPage() {
   const resetForm = () => {
     setFormData({
       name: '',
-      description: '',
-      website: '',
+      cnpj: '',
+      email: '',
       phone: '',
       address: '',
       city: '',
       state: '',
-      country: 'Brasil',
-      postal_code: ''
+      zip_code: ''
     })
     setEditingCompany(null)
   }
@@ -111,16 +110,15 @@ export default function CompaniesPage() {
   const handleEdit = (company: Company) => {
     setEditingCompany(company)
     setFormData({
-      name: company.name,
-      description: company.description || '',
-      website: company.website || '',
-      phone: company.phone || '',
-      address: company.address || '',
-      city: company.city || '',
-      state: company.state || '',
-      country: company.country,
-      postal_code: company.postal_code || ''
-    })
+        name: company.name,
+        cnpj: company.cnpj || '',
+        email: company.email || '',
+        phone: company.phone || '',
+        address: company.address || '',
+        city: company.city || '',
+        state: company.state || '',
+        zip_code: company.zip_code || ''
+      })
     setIsDialogOpen(true)
   }
 
@@ -263,23 +261,23 @@ export default function CompaniesPage() {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="website">Website</Label>
+                  <Label htmlFor="cnpj">CNPJ</Label>
                   <Input
-                    id="website"
-                    value={formData.website || ''}
-                    onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                    placeholder="https://exemplo.com"
+                    id="cnpj"
+                    value={formData.cnpj || ''}
+                    onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })}
+                    placeholder="00.000.000/0000-00"
                   />
                 </div>
                 
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="description">Descrição</Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description || ''}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Descrição da empresa"
-                    rows={3}
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email || ''}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="empresa@exemplo.com"
                   />
                 </div>
                 
@@ -294,11 +292,11 @@ export default function CompaniesPage() {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="postal_code">CEP</Label>
+                  <Label htmlFor="zip_code">CEP</Label>
                   <Input
-                    id="postal_code"
-                    value={formData.postal_code || ''}
-                    onChange={(e) => setFormData({ ...formData, postal_code: e.target.value })}
+                    id="zip_code"
+                    value={formData.zip_code || ''}
+                    onChange={(e) => setFormData({ ...formData, zip_code: e.target.value })}
                     placeholder="00000-000"
                   />
                 </div>
@@ -387,6 +385,14 @@ export default function CompaniesPage() {
                     <CardTitle className="text-base">{company.name}</CardTitle>
                   </div>
                   <div className="flex items-center space-x-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => router.push(`/companies/${company.id}/bling`)}
+                      title="Configurações Bling"
+                    >
+                      <Settings className="h-4 w-4" />
+                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"
