@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Verify user has access to the company
+    // Verify user has access to the company (either as member or owner)
     const { data: companyUser, error: companyError } = await supabase
       .from('company_users')
       .select('*')
@@ -93,11 +93,20 @@ export async function GET(request: NextRequest) {
       .eq('company_id', company_id)
       .single()
 
+    // If not found in company_users, check if user is the company owner
     if (companyError || !companyUser) {
-      return NextResponse.json(
-        createApiResponse(false, null, 'Acesso negado à empresa'),
-        { status: HttpStatus.FORBIDDEN }
-      )
+      const { data: company, error: ownerError } = await supabase
+        .from('companies')
+        .select('created_by')
+        .eq('id', company_id)
+        .single()
+
+      if (ownerError || !company || company.created_by !== user.id) {
+        return NextResponse.json(
+          createApiResponse(false, null, 'Acesso negado à empresa'),
+          { status: HttpStatus.FORBIDDEN }
+        )
+      }
     }
 
     // Get Bling configuration
@@ -210,7 +219,7 @@ export async function POST(request: NextRequest) {
 
     const configData = validationResult.data
 
-    // Verify user has access to the company
+    // Verify user has access to the company (either as member or owner)
     const { data: companyUser, error: companyError } = await supabase
       .from('company_users')
       .select('*')
@@ -218,11 +227,20 @@ export async function POST(request: NextRequest) {
       .eq('company_id', configData.company_id)
       .single()
 
+    // If not found in company_users, check if user is the company owner
     if (companyError || !companyUser) {
-      return NextResponse.json(
-        createApiResponse(false, null, 'Acesso negado à empresa'),
-        { status: HttpStatus.FORBIDDEN }
-      )
+      const { data: company, error: ownerError } = await supabase
+        .from('companies')
+        .select('created_by')
+        .eq('id', configData.company_id)
+        .single()
+
+      if (ownerError || !company || company.created_by !== user.id) {
+        return NextResponse.json(
+          createApiResponse(false, null, 'Acesso negado à empresa'),
+          { status: HttpStatus.FORBIDDEN }
+        )
+      }
     }
 
     // Check if configuration already exists
@@ -367,7 +385,7 @@ export async function PUT(request: NextRequest) {
 
     const updateData = validationResult.data
 
-    // Verify user has access to the company
+    // Verify user has access to the company (either as member or owner)
     const { data: companyUser, error: companyError } = await supabase
       .from('company_users')
       .select('*')
@@ -375,11 +393,20 @@ export async function PUT(request: NextRequest) {
       .eq('company_id', company_id)
       .single()
 
+    // If not found in company_users, check if user is the company owner
     if (companyError || !companyUser) {
-      return NextResponse.json(
-        createApiResponse(false, null, 'Acesso negado à empresa'),
-        { status: HttpStatus.FORBIDDEN }
-      )
+      const { data: company, error: ownerError } = await supabase
+        .from('companies')
+        .select('created_by')
+        .eq('id', company_id)
+        .single()
+
+      if (ownerError || !company || company.created_by !== user.id) {
+        return NextResponse.json(
+          createApiResponse(false, null, 'Acesso negado à empresa'),
+          { status: HttpStatus.FORBIDDEN }
+        )
+      }
     }
 
     // Check if configuration exists
@@ -500,7 +527,7 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    // Verify user has access to the company
+    // Verify user has access to the company (either as member or owner)
     const { data: companyUser, error: companyError } = await supabase
       .from('company_users')
       .select('*')
@@ -508,11 +535,20 @@ export async function DELETE(request: NextRequest) {
       .eq('company_id', company_id)
       .single()
 
+    // If not found in company_users, check if user is the company owner
     if (companyError || !companyUser) {
-      return NextResponse.json(
-        createApiResponse(false, null, 'Acesso negado à empresa'),
-        { status: HttpStatus.FORBIDDEN }
-      )
+      const { data: company, error: ownerError } = await supabase
+        .from('companies')
+        .select('created_by')
+        .eq('id', company_id)
+        .single()
+
+      if (ownerError || !company || company.created_by !== user.id) {
+        return NextResponse.json(
+          createApiResponse(false, null, 'Acesso negado à empresa'),
+          { status: HttpStatus.FORBIDDEN }
+        )
+      }
     }
 
     // Check if configuration exists
