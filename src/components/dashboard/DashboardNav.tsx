@@ -30,8 +30,9 @@ import {
   Menu,
   User,
   Activity,
-  MessageSquare,
-  Bell
+  ShoppingCart,
+  FileText,
+  Zap
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
@@ -48,10 +49,9 @@ const navigation = [
   { name: 'Suporte', href: '/dashboard/tasks', icon: CheckSquare },
   { name: 'Equipe', href: '/dashboard/teams', icon: Users },
   { name: 'Atividades', href: '/dashboard/activities', icon: Activity },
-  { name: 'Analytics', href: '/dashboard/analytics', icon: Activity },
-  { name: 'Tickets', href: '/dashboard/tickets', icon: MessageSquare },
-  { name: 'Notificações', href: '/dashboard/notifications', icon: Bell },
-    { name: 'Configurações', href: '/dashboard/settings', icon: Settings },
+  { name: 'Marketplaces', href: '/dashboard/marketplaces', icon: ShoppingCart },
+  { name: 'Bling ERP', href: '/dashboard/bling', icon: Zap },
+  { name: 'Documentos', href: '/dashboard/documents', icon: FileText },
 ]
 
 export default function DashboardNav({ user, profile }: DashboardNavProps) {
@@ -116,7 +116,7 @@ export default function DashboardNav({ user, profile }: DashboardNavProps) {
               )}
             >
               <Icon className="w-5 h-5 mr-3" />
-              <span className="hidden lg:block">{item.name}</span>
+              {item.name}
             </Link>
           )
         })}

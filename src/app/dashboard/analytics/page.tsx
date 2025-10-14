@@ -6,25 +6,11 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { DatePickerWithRange } from '@/components/ui/date-range-picker'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Separator } from '@/components/ui/separator'
 import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-  AreaChart,
-  Area
-} from 'recharts'
-import { 
+  BarChart3, 
   TrendingUp, 
   TrendingDown, 
   DollarSign, 
@@ -33,323 +19,341 @@ import {
   Package,
   Calendar,
   Download,
+  RefreshCw,
   Filter,
-  BarChart3,
-  PieChart as PieChartIcon,
-  Activity,
-  Target
+  Eye
 } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
+import { useRouter } from 'next/navigation'
 
-// Mock data para os gráficos
-const salesData = [
-  { month: 'Jan', vendas: 4000, pedidos: 240, clientes: 120 },
-  { month: 'Fev', vendas: 3000, pedidos: 198, clientes: 98 },
-  { month: 'Mar', vendas: 2000, pedidos: 180, clientes: 89 },
-  { month: 'Abr', vendas: 2780, pedidos: 208, clientes: 103 },
-  { month: 'Mai', vendas: 1890, pedidos: 181, clientes: 91 },
-  { month: 'Jun', vendas: 2390, pedidos: 250, clientes: 125 },
-  { month: 'Jul', vendas: 3490, pedidos: 290, clientes: 145 },
-]
-
-const marketplaceData = [
-  { name: 'Mercado Livre', value: 35, vendas: 15000, cor: '#FFE600' },
-  { name: 'Shopee', value: 25, vendas: 10000, cor: '#EE4D2D' },
-  { name: 'Amazon', value: 20, vendas: 8000, cor: '#FF9900' },
-  { name: 'Magazine Luiza', value: 15, vendas: 6000, cor: '#0F4C81' },
-  { name: 'Outros', value: 5, vendas: 2000, cor: '#8884d8' },
-]
-
-const performanceData = [
-  { marketplace: 'Mercado Livre', conversao: 3.2, ticket_medio: 85.50, satisfacao: 4.5 },
-  { marketplace: 'Shopee', conversao: 2.8, ticket_medio: 72.30, satisfacao: 4.2 },
-  { marketplace: 'Amazon', conversao: 4.1, ticket_medio: 95.80, satisfacao: 4.7 },
-  { marketplace: 'Magazine Luiza', conversao: 2.5, ticket_medio: 68.90, satisfacao: 4.0 },
-]
-
-const topProducts = [
-  { nome: 'Smartphone XYZ', vendas: 150, receita: 45000, marketplace: 'Mercado Livre' },
-  { nome: 'Notebook ABC', vendas: 89, receita: 89000, marketplace: 'Amazon' },
-  { nome: 'Fone Bluetooth', vendas: 234, receita: 23400, marketplace: 'Shopee' },
-  { nome: 'Smartwatch Pro', vendas: 67, receita: 20100, marketplace: 'Magazine Luiza' },
-  { nome: 'Tablet Ultra', vendas: 45, receita: 22500, marketplace: 'Mercado Livre' },
-]
+interface AnalyticsData {
+  totalRevenue: number
+  totalOrders: number
+  totalCustomers: number
+  totalProducts: number
+  revenueGrowth: number
+  ordersGrowth: number
+  customersGrowth: number
+  productsGrowth: number
+  topProducts: Array<{
+    id: string
+    name: string
+    sales: number
+    revenue: number
+  }>
+  recentOrders: Array<{
+    id: string
+    customer: string
+    total: number
+    status: string
+    date: string
+  }>
+  monthlyRevenue: Array<{
+    month: string
+    revenue: number
+  }>
+}
 
 export default function AnalyticsPage() {
-  const [selectedPeriod, setSelectedPeriod] = useState('30d')
-  const [selectedMarketplace, setSelectedMarketplace] = useState('all')
+  const router = useRouter()
+  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
+  const [dateRange, setDateRange] = useState('30d')
+  const [refreshing, setRefreshing] = useState(false)
 
-  const getKPIStats = () => {
-    return {
-      totalSales: 41000,
-      totalOrders: 1547,
-      totalCustomers: 771,
-      avgTicket: 26.5,
-      conversionRate: 3.2,
-      growthRate: 12.5
+  useEffect(() => {
+    checkAuth()
+  }, [])
+
+  const checkAuth = async () => {
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser()
+      
+      if (error || !user) {
+        router.push('/login')
+        return
+      }
+      
+      setCurrentUser(user)
+      await loadAnalyticsData()
+    } catch (error) {
+      console.error('Erro ao verificar autenticação:', error)
+      router.push('/login')
+    } finally {
+      setLoading(false)
     }
   }
 
-  const stats = getKPIStats()
+  const loadAnalyticsData = async () => {
+    try {
+      setRefreshing(true)
+      
+      // Simulated analytics data - replace with actual API calls
+      const mockData: AnalyticsData = {
+        totalRevenue: 125430.50,
+        totalOrders: 1247,
+        totalCustomers: 892,
+        totalProducts: 156,
+        revenueGrowth: 12.5,
+        ordersGrowth: 8.3,
+        customersGrowth: 15.2,
+        productsGrowth: 3.1,
+        topProducts: [
+          { id: '1', name: 'Produto Premium A', sales: 234, revenue: 23400 },
+          { id: '2', name: 'Produto Standard B', sales: 189, revenue: 18900 },
+          { id: '3', name: 'Produto Básico C', sales: 156, revenue: 15600 },
+          { id: '4', name: 'Produto Especial D', sales: 123, revenue: 12300 },
+          { id: '5', name: 'Produto Limitado E', sales: 98, revenue: 9800 }
+        ],
+        recentOrders: [
+          { id: 'ORD-001', customer: 'João Silva', total: 299.90, status: 'completed', date: '2024-01-15' },
+          { id: 'ORD-002', customer: 'Maria Santos', total: 189.50, status: 'processing', date: '2024-01-15' },
+          { id: 'ORD-003', customer: 'Pedro Costa', total: 459.00, status: 'shipped', date: '2024-01-14' },
+          { id: 'ORD-004', customer: 'Ana Oliveira', total: 129.90, status: 'completed', date: '2024-01-14' },
+          { id: 'ORD-005', customer: 'Carlos Lima', total: 349.99, status: 'pending', date: '2024-01-13' }
+        ],
+        monthlyRevenue: [
+          { month: 'Jan', revenue: 45000 },
+          { month: 'Fev', revenue: 52000 },
+          { month: 'Mar', revenue: 48000 },
+          { month: 'Abr', revenue: 61000 },
+          { month: 'Mai', revenue: 55000 },
+          { month: 'Jun', revenue: 67000 }
+        ]
+      }
+      
+      setAnalyticsData(mockData)
+    } catch (error) {
+      console.error('Erro ao carregar dados de analytics:', error)
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
+  const getStatusColor = (status: string) => {
+    const colors = {
+      completed: 'bg-green-100 text-green-800',
+      processing: 'bg-blue-100 text-blue-800',
+      shipped: 'bg-purple-100 text-purple-800',
+      pending: 'bg-yellow-100 text-yellow-800',
+      cancelled: 'bg-red-100 text-red-800'
+    }
+    return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800'
+  }
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value)
+  }
+
+  const formatGrowth = (growth: number) => {
+    const isPositive = growth >= 0
+    return (
+      <div className={`flex items-center gap-1 ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+        {isPositive ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+        <span className="text-sm font-medium">
+          {isPositive ? '+' : ''}{growth.toFixed(1)}%
+        </span>
+      </div>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
+  if (!analyticsData) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-gray-500 mb-4">Erro ao carregar dados de analytics</p>
+          <Button onClick={loadAnalyticsData}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Tentar Novamente
+          </Button>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Relatórios e Analytics</h1>
-          <p className="text-muted-foreground">
-            Dashboard avançado com métricas e insights de performance
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900">Analytics</h1>
+          <p className="text-gray-600 mt-1">Análise detalhada do desempenho do seu negócio</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline">
-            <Download className="mr-2 h-4 w-4" />
-            Exportar
+        
+        <div className="flex items-center gap-3">
+          <Select value={dateRange} onValueChange={setDateRange}>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7d">7 dias</SelectItem>
+              <SelectItem value="30d">30 dias</SelectItem>
+              <SelectItem value="90d">90 dias</SelectItem>
+              <SelectItem value="1y">1 ano</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          <Button 
+            variant="outline" 
+            onClick={loadAnalyticsData}
+            disabled={refreshing}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            Atualizar
           </Button>
+          
           <Button variant="outline">
-            <Filter className="mr-2 h-4 w-4" />
-            Filtros
+            <Download className="h-4 w-4 mr-2" />
+            Exportar
           </Button>
         </div>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-wrap gap-4">
-            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Período" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7d">Últimos 7 dias</SelectItem>
-                <SelectItem value="30d">Últimos 30 dias</SelectItem>
-                <SelectItem value="90d">Últimos 90 dias</SelectItem>
-                <SelectItem value="1y">Último ano</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={selectedMarketplace} onValueChange={setSelectedMarketplace}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Marketplace" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="mercado-livre">Mercado Livre</SelectItem>
-                <SelectItem value="shopee">Shopee</SelectItem>
-                <SelectItem value="amazon">Amazon</SelectItem>
-                <SelectItem value="magalu">Magazine Luiza</SelectItem>
-              </SelectContent>
-            </Select>
-            <DatePickerWithRange />
-          </div>
-        </CardContent>
-      </Card>
-
       {/* KPI Cards */}
-      <div className="grid gap-4 md:grid-cols-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Vendas Totais</CardTitle>
+            <CardTitle className="text-sm font-medium">Receita Total</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">R$ {stats.totalSales.toLocaleString()}</div>
-            <div className="flex items-center text-xs text-green-600">
-              <TrendingUp className="h-3 w-3 mr-1" />
-              +{stats.growthRate}% vs mês anterior
-            </div>
+            <div className="text-2xl font-bold">{formatCurrency(analyticsData.totalRevenue)}</div>
+            {formatGrowth(analyticsData.revenueGrowth)}
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pedidos</CardTitle>
+            <CardTitle className="text-sm font-medium">Total de Pedidos</CardTitle>
             <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalOrders}</div>
-            <div className="flex items-center text-xs text-green-600">
-              <TrendingUp className="h-3 w-3 mr-1" />
-              +8.2% vs mês anterior
-            </div>
+            <div className="text-2xl font-bold">{analyticsData.totalOrders.toLocaleString()}</div>
+            {formatGrowth(analyticsData.ordersGrowth)}
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Clientes</CardTitle>
+            <CardTitle className="text-sm font-medium">Total de Clientes</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalCustomers}</div>
-            <div className="flex items-center text-xs text-green-600">
-              <TrendingUp className="h-3 w-3 mr-1" />
-              +15.3% vs mês anterior
-            </div>
+            <div className="text-2xl font-bold">{analyticsData.totalCustomers.toLocaleString()}</div>
+            {formatGrowth(analyticsData.customersGrowth)}
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ticket Médio</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">R$ {stats.avgTicket}</div>
-            <div className="flex items-center text-xs text-red-600">
-              <TrendingDown className="h-3 w-3 mr-1" />
-              -2.1% vs mês anterior
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Conversão</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.conversionRate}%</div>
-            <div className="flex items-center text-xs text-green-600">
-              <TrendingUp className="h-3 w-3 mr-1" />
-              +0.5% vs mês anterior
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Produtos</CardTitle>
+            <CardTitle className="text-sm font-medium">Total de Produtos</CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1,234</div>
-            <div className="flex items-center text-xs text-green-600">
-              <TrendingUp className="h-3 w-3 mr-1" />
-              +45 novos produtos
-            </div>
+            <div className="text-2xl font-bold">{analyticsData.totalProducts.toLocaleString()}</div>
+            {formatGrowth(analyticsData.productsGrowth)}
           </CardContent>
         </Card>
       </div>
 
-      {/* Charts */}
-      <Tabs defaultValue="overview" className="space-y-4">
+      {/* Analytics Tabs */}
+      <Tabs defaultValue="overview" className="space-y-6">
         <TabsList>
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-          <TabsTrigger value="marketplaces">Marketplaces</TabsTrigger>
           <TabsTrigger value="products">Produtos</TabsTrigger>
-          <TabsTrigger value="performance">Performance</TabsTrigger>
+          <TabsTrigger value="orders">Pedidos</TabsTrigger>
+          <TabsTrigger value="customers">Clientes</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
+        <TabsContent value="overview" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Revenue Chart Placeholder */}
             <Card>
               <CardHeader>
-                <CardTitle>Vendas por Mês</CardTitle>
-                <CardDescription>Evolução das vendas nos últimos 7 meses</CardDescription>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5" />
+                  Receita Mensal
+                </CardTitle>
+                <CardDescription>
+                  Evolução da receita nos últimos 6 meses
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <AreaChart data={salesData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip />
-                    <Area type="monotone" dataKey="vendas" stroke="#8884d8" fill="#8884d8" fillOpacity={0.6} />
-                  </AreaChart>
-                </ResponsiveContainer>
+                <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
+                  <div className="text-center text-gray-500">
+                    <BarChart3 className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p>Gráfico de receita mensal</p>
+                    <p className="text-sm">(Implementar com biblioteca de gráficos)</p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
+            {/* Recent Orders */}
             <Card>
               <CardHeader>
-                <CardTitle>Pedidos vs Clientes</CardTitle>
-                <CardDescription>Comparativo mensal de pedidos e novos clientes</CardDescription>
+                <CardTitle>Pedidos Recentes</CardTitle>
+                <CardDescription>
+                  Últimos pedidos realizados
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={salesData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey="pedidos" stroke="#8884d8" strokeWidth={2} />
-                    <Line type="monotone" dataKey="clientes" stroke="#82ca9d" strokeWidth={2} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="marketplaces" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Distribuição por Marketplace</CardTitle>
-                <CardDescription>Participação de cada marketplace nas vendas</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={marketplaceData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {marketplaceData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.cor} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Vendas por Marketplace</CardTitle>
-                <CardDescription>Comparativo de vendas em reais</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={marketplaceData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="vendas" fill="#8884d8" />
-                  </BarChart>
-                </ResponsiveContainer>
+                <div className="space-y-3">
+                  {analyticsData.recentOrders.map((order) => (
+                    <div key={order.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <p className="font-medium">{order.id}</p>
+                        <p className="text-sm text-gray-600">{order.customer}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium">{formatCurrency(order.total)}</p>
+                        <Badge className={getStatusColor(order.status)}>
+                          {order.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </div>
         </TabsContent>
 
-        <TabsContent value="products" className="space-y-4">
+        <TabsContent value="products" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Top 5 Produtos</CardTitle>
-              <CardDescription>Produtos com melhor performance de vendas</CardDescription>
+              <CardTitle>Produtos Mais Vendidos</CardTitle>
+              <CardDescription>
+                Ranking dos produtos com melhor desempenho
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {topProducts.map((product, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center gap-4">
-                      <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-bold">{index + 1}</span>
+                {analyticsData.topProducts.map((product, index) => (
+                  <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold">
+                        {index + 1}
                       </div>
                       <div>
-                        <h4 className="font-semibold">{product.nome}</h4>
-                        <p className="text-sm text-muted-foreground">{product.marketplace}</p>
+                        <p className="font-medium">{product.name}</p>
+                        <p className="text-sm text-gray-600">{product.sales} vendas</p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold">R$ {product.receita.toLocaleString()}</p>
-                      <p className="text-sm text-muted-foreground">{product.vendas} vendas</p>
+                      <p className="font-bold text-green-600">{formatCurrency(product.revenue)}</p>
                     </div>
                   </div>
                 ))}
@@ -358,33 +362,86 @@ export default function AnalyticsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="performance" className="space-y-4">
+        <TabsContent value="orders" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Performance por Marketplace</CardTitle>
-              <CardDescription>Métricas de conversão, ticket médio e satisfação</CardDescription>
+              <CardTitle>Análise de Pedidos</CardTitle>
+              <CardDescription>
+                Estatísticas detalhadas sobre pedidos
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {performanceData.map((item, index) => (
-                  <div key={index} className="grid grid-cols-4 gap-4 p-4 border rounded-lg">
-                    <div>
-                      <h4 className="font-semibold">{item.marketplace}</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <p className="text-2xl font-bold text-blue-600">{analyticsData.totalOrders}</p>
+                  <p className="text-sm text-gray-600">Total de Pedidos</p>
+                </div>
+                <div className="text-center p-4 bg-green-50 rounded-lg">
+                  <p className="text-2xl font-bold text-green-600">
+                    {formatCurrency(analyticsData.totalRevenue / analyticsData.totalOrders)}
+                  </p>
+                  <p className="text-sm text-gray-600">Ticket Médio</p>
+                </div>
+                <div className="text-center p-4 bg-purple-50 rounded-lg">
+                  <p className="text-2xl font-bold text-purple-600">
+                    {((analyticsData.totalOrders / analyticsData.totalCustomers) * 100).toFixed(1)}%
+                  </p>
+                  <p className="text-sm text-gray-600">Taxa de Conversão</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="customers" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Análise de Clientes</CardTitle>
+              <CardDescription>
+                Insights sobre o comportamento dos clientes
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h4 className="font-medium">Métricas de Clientes</h4>
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Total de Clientes</span>
+                      <span className="font-medium">{analyticsData.totalCustomers}</span>
                     </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-blue-600">{item.conversao}%</p>
-                      <p className="text-sm text-muted-foreground">Conversão</p>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Novos Clientes (30d)</span>
+                      <span className="font-medium text-green-600">+{Math.round(analyticsData.totalCustomers * 0.15)}</span>
                     </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-green-600">R$ {item.ticket_medio}</p>
-                      <p className="text-sm text-muted-foreground">Ticket Médio</p>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Clientes Ativos</span>
+                      <span className="font-medium">{Math.round(analyticsData.totalCustomers * 0.68)}</span>
                     </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-yellow-600">{item.satisfacao}/5</p>
-                      <p className="text-sm text-muted-foreground">Satisfação</p>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Taxa de Retenção</span>
+                      <span className="font-medium text-blue-600">73.2%</span>
                     </div>
                   </div>
-                ))}
+                </div>
+                
+                <div className="space-y-4">
+                  <h4 className="font-medium">Valor por Cliente</h4>
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">LTV Médio</span>
+                      <span className="font-medium">{formatCurrency(analyticsData.totalRevenue / analyticsData.totalCustomers * 2.3)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Compra Média</span>
+                      <span className="font-medium">{formatCurrency(analyticsData.totalRevenue / analyticsData.totalOrders)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Frequência de Compra</span>
+                      <span className="font-medium">2.1x/mês</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>

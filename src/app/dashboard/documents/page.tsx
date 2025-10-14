@@ -31,7 +31,6 @@ import {
   FolderOpen,
   FileImage,
   FileSpreadsheet,
-  FilePdf,
   FileCode,
   Package,
   Receipt,
@@ -85,8 +84,6 @@ import { Progress } from '@/components/ui/progress'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
-import { PermissionGuard } from '@/components/rbac/permission-guard'
-import { useAuth } from '@/hooks/use-auth'
 import { toast } from 'sonner'
 
 interface DocumentFile {
@@ -134,7 +131,6 @@ interface DocumentFilters {
 
 export default function DocumentsPage() {
   const router = useRouter()
-  const { user, hasPermission } = useAuth()
   
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
@@ -361,7 +357,7 @@ export default function DocumentsPage() {
       default:
         switch (extension) {
           case 'pdf':
-            return <FilePdf className="h-5 w-5 text-red-500" />
+            return <FileText className="h-5 w-5 text-red-500" />
           case 'jpg':
           case 'jpeg':
           case 'png':
@@ -514,12 +510,10 @@ export default function DocumentsPage() {
             Nova Pasta
           </Button>
           
-          <PermissionGuard permission="documents:manage">
-            <Button onClick={() => setShowUploadDialog(true)}>
-              <Upload className="h-4 w-4 mr-2" />
-              Enviar Arquivos
-            </Button>
-          </PermissionGuard>
+          <Button onClick={() => setShowUploadDialog(true)}>
+            <Upload className="h-4 w-4 mr-2" />
+            Enviar Arquivos
+          </Button>
         </div>
       </div>
 

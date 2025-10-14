@@ -367,14 +367,14 @@ export default function TasksPage() {
         
         <div className="flex items-center space-x-2">
           <Select
-            value={filters.status?.join(',') || ''}
-            onValueChange={(value) => handleFilterChange('status', value ? value.split(',') : [])}
+            value={filters.status?.join(',') || 'all'}
+            onValueChange={(value) => handleFilterChange('status', value === 'all' ? [] : value.split(','))}
           >
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos os Status</SelectItem>
+              <SelectItem value="all">Todos os Status</SelectItem>
               {Object.entries(statusLabels).map(([key, label]) => (
                 <SelectItem key={key} value={key}>{label}</SelectItem>
               ))}
@@ -382,14 +382,14 @@ export default function TasksPage() {
           </Select>
 
           <Select
-            value={filters.priority?.join(',') || ''}
-            onValueChange={(value) => handleFilterChange('priority', value ? value.split(',') : [])}
+            value={filters.priority?.join(',') || 'all'}
+            onValueChange={(value) => handleFilterChange('priority', value === 'all' ? [] : value.split(','))}
           >
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Prioridade" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todas as Prioridades</SelectItem>
+              <SelectItem value="all">Todas as Prioridades</SelectItem>
               {Object.entries(priorityLabels).map(([key, label]) => (
                 <SelectItem key={key} value={key}>{label}</SelectItem>
               ))}

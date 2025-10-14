@@ -40,8 +40,8 @@ import {
   UpdateUserForm
 } from '@/types/rbac'
 import { rbacService } from '@/lib/services/rbac-service'
-import { useAuth } from '@/hooks/use-auth'
 import { PermissionGuard } from '@/components/rbac/permission-guard'
+import { createClient } from '@/lib/supabase/client'
 
 const statusColors = {
   active: 'bg-green-100 text-green-800',
@@ -56,9 +56,10 @@ const roleColors = {
 
 export default function UsersPage() {
   const router = useRouter()
-  const { user: currentUser, isAdmin, isLeader } = useAuth()
+  const supabase = createClient()
   
   // Estados
+  const [currentUser, setCurrentUser] = useState<any>(null)
   const [users, setUsers] = useState<TeamMember[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -78,6 +79,33 @@ export default function UsersPage() {
     by_role: {} as Record<UserRole, number>,
     by_department: {} as Record<string, number>
   })
+
+  // Verificar autenticação e carregar dados iniciais
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser()
+        
+        if (error) {
+          console.error('Erro de autenticação:', error)
+          router.push('/auth/login')
+          return
+        }
+
+        if (!user) {
+          router.push('/auth/login')
+          return
+        }
+
+        setCurrentUser(user)
+      } catch (error) {
+        console.error('Erro ao verificar autenticação:', error)
+        router.push('/auth/login')
+      }
+    }
+
+    checkAuth()
+  }, [router, supabase.auth])
 
   // Carrega dados iniciais
   useEffect(() => {

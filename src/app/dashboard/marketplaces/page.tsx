@@ -25,7 +25,6 @@ import {
   XCircle,
   ExternalLink,
   Settings,
-  Sync,
   BarChart3,
   Users,
   Star
@@ -76,8 +75,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Progress } from '@/components/ui/progress'
 import { DatePickerWithRange } from '@/components/ui/date-range-picker'
-import { PermissionGuard } from '@/components/rbac/permission-guard'
-import { useAuth } from '@/hooks/use-auth'
 import { OrdersService } from '@/lib/services/orders-service'
 import { BlingApiService } from '@/lib/services/bling-api'
 import { toast } from 'sonner'
@@ -116,7 +113,6 @@ interface MarketplaceFilters {
 
 export default function MarketplacesPage() {
   const router = useRouter()
-  const { user, hasPermission } = useAuth()
   
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
@@ -369,17 +365,15 @@ export default function MarketplacesPage() {
             {syncing ? (
               <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
             ) : (
-              <Sync className="h-4 w-4 mr-2" />
+              <RefreshCw className="h-4 w-4 mr-2" />
             )}
             {syncing ? 'Sincronizando...' : 'Sincronizar'}
           </Button>
           
-          <PermissionGuard permission="orders:manage">
-            <Button>
-              <Settings className="h-4 w-4 mr-2" />
-              Configurações
-            </Button>
-          </PermissionGuard>
+          <Button>
+            <Settings className="h-4 w-4 mr-2" />
+            Configurações
+          </Button>
         </div>
       </div>
 
@@ -757,7 +751,7 @@ export default function MarketplacesPage() {
               Cancelar
             </Button>
             <Button onClick={handleSyncMarketplaces}>
-              <Sync className="h-4 w-4 mr-2" />
+              <RefreshCw className="h-4 w-4 mr-2" />
               Sincronizar Agora
             </Button>
           </DialogFooter>

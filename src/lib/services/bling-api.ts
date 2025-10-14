@@ -1,268 +1,534 @@
-// Bling API V3 Integration Service
-import { ApiResponse } from '@/types/api'
+// =====================================================
+// BLING API V3 INTEGRATION SERVICE - VERSÃO COMPLETA
+// =====================================================
 
-// Bling API Types
-export interface BlingConfig {
-  clientId: string
-  clientSecret: string
-  accessToken?: string
-  refreshToken?: string
-  expiresAt?: Date
-}
+import { ApiResponse } from '@/types/api';
+import { 
+  BlingConfig, 
+  BlingOrder, 
+  BlingProduct, 
+  BlingCustomer,
+  BlingOrderFilters,
+  BlingProductFilters,
+  BlingCustomerFilters,
+  BlingApiResponse,
+  BlingListResponse,
+  BlingAuthResponse,
+  BlingSyncResult,
+  BlingSyncOptions,
+  BlingStats,
+  BLING_ENDPOINTS,
+  formatBlingDate,
+  isBlingTokenExpired
+} from '@/types/bling';
 
-export interface BlingOrder {
-  id: number
-  numero: string
-  data: string
-  dataEntrega?: string
-  cliente: {
-    id: number
-    nome: string
-    email?: string
-    telefone?: string
-  }
-  itens: BlingOrderItem[]
-  total: number
-  situacao: {
-    id: number
-    valor: string
-  }
-  loja?: {
-    id: number
-    nome: string
-  }
-  marketplace?: string
-  observacoes?: string
-  desconto?: number
-  frete?: number
-}
+// =====================================================
+// BLING API SERVICE CLASS - VERSÃO COMPLETA
+// =====================================================
 
-export interface BlingOrderItem {
-  id: number
-  codigo?: string
-  descricao: string
-  quantidade: number
-  valor: number
-  produto?: {
-    id: number
-    nome: string
-    codigo?: string
-  }
-}
-
-export interface BlingProduct {
-  id: number
-  nome: string
-  codigo?: string
-  preco: number
-  situacao: string
-  formato: string
-  descricaoCurta?: string
-  descricaoComplementar?: string
-  categoria?: {
-    id: number
-    descricao: string
-  }
-  estoque?: {
-    minimo?: number
-    maximo?: number
-    atual?: number
-  }
-}
-
-export interface BlingCustomer {
-  id: number
-  nome: string
-  email?: string
-  telefone?: string
-  documento?: string
-  endereco?: {
-    endereco: string
-    numero?: string
-    complemento?: string
-    bairro: string
-    cidade: string
-    uf: string
-    cep: string
-  }
-}
-
-// Bling API Service Class
 export class BlingApiService {
-  private baseUrl = 'https://www.bling.com.br/Api/v3'
-  private config: BlingConfig
+  private baseUrl = 'https://www.bling.com.br/Api/v3';
+  private config: BlingConfig;
 
   constructor(config: BlingConfig) {
-    this.config = config
+    this.config = config;
   }
 
-  // Authentication Methods
+  // =====================================================
+  // MÉTODOS DE AUTENTICAÇÃO
+  // =====================================================
+
   async authenticate(): Promise<boolean> {
     try {
-      if (!this.config.accessToken || this.isTokenExpired()) {
-        await this.refreshAccessToken()
+      if (!this.config.access_token || isBlingTokenExpired(this.config.expires_at)) {
+        return await this.refreshAccessToken();
       }
-      return true
+      return true;
     } catch (error) {
-      console.error('Bling authentication failed:', error)
-      return false
+      console.error('Bling authentication failed:', error);
+      return false;
+    }
+  }
+
+  private async refreshAccessToken(): Promise<boolean> {
+    try {
+      if (!this.config.refresh_token) {
+        throw new Error('Refresh token not available');
+      }
+
+      const response = await fetch(`${this.baseUrl}${BLING_ENDPOINTS.AUTH}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          grant_type: 'refresh_token',
+          refresh_token: this.config.refresh_token,
+          client_id: this.config.client_id,
+          client_secret: this.config.client_secret,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Token refresh failed: ${response.statusText}`);
+      }
+
+      const authData: BlingAuthResponse = await response.json();
+      
+      // Update config with new tokens
+      this.config.access_token = authData.access_token;
+      this.config.refresh_token = authData.refresh_token;
+      this.config.expires_at = new Date(Date.now() + authData.expires_in * 1000).toISOString();
+
+      return true;
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+      return false;
     }
   }
 
   private isTokenExpired(): boolean {
-    if (!this.config.expiresAt) return true
-    return new Date() >= this.config.expiresAt
+    return isBlingTokenExpired(this.config.expires_at);
   }
 
-  private async refreshAccessToken(): Promise<void> {
-    if (!this.config.refreshToken) {
-      throw new Error('Refresh token not available')
-    }
+  // =====================================================
+  // MÉTODOS GENÉRICOS DE REQUISIÇÃO
+  // =====================================================
 
-    const response = await fetch(`${this.baseUrl}/oauth/token`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        grant_type: 'refresh_token',
-        refresh_token: this.config.refreshToken,
-        client_id: this.config.clientId,
-        client_secret: this.config.clientSecret,
-      }),
-    })
-
-    if (!response.ok) {
-      throw new Error('Failed to refresh access token')
-    }
-
-    const data = await response.json()
-    this.config.accessToken = data.access_token
-    this.config.refreshToken = data.refresh_token
-    this.config.expiresAt = new Date(Date.now() + data.expires_in * 1000)
-  }
-
-  // Generic API Request Method
   private async makeRequest<T>(
     endpoint: string,
     options: RequestInit = {}
-  ): Promise<ApiResponse<T>> {
-    await this.authenticate()
+  ): Promise<BlingApiResponse<T>> {
+    const authenticated = await this.authenticate();
+    if (!authenticated) {
+      throw new Error('Authentication failed');
+    }
 
-    const url = `${this.baseUrl}${endpoint}`
+    const url = `${this.baseUrl}${endpoint}`;
     const response = await fetch(url, {
       ...options,
       headers: {
-        'Authorization': `Bearer ${this.config.accessToken}`,
+        'Authorization': `Bearer ${this.config.access_token}`,
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
         ...options.headers,
       },
-    })
+    });
 
-    const data = await response.json()
+    const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error?.message || 'Bling API request failed')
+      throw new Error(data.error?.message || `Bling API request failed: ${response.statusText}`);
     }
 
-    return {
-      success: true,
-      data: data.data,
-      meta: data.meta,
-    }
+    return data;
   }
 
-  // Orders Methods
-  async getOrders(params?: {
-    dataInicial?: string
-    dataFinal?: string
-    situacao?: string
-    loja?: number
-    pagina?: number
-    limite?: number
-  }): Promise<ApiResponse<BlingOrder[]>> {
-    const queryParams = new URLSearchParams()
+  private async makeListRequest<T>(
+    endpoint: string,
+    params: Record<string, any> = {}
+  ): Promise<BlingListResponse<T>> {
+    const queryParams = new URLSearchParams();
     
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined) {
-          queryParams.append(key, value.toString())
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        if (Array.isArray(value)) {
+          value.forEach(v => queryParams.append(key, v.toString()));
+        } else {
+          queryParams.append(key, value.toString());
         }
-      })
-    }
+      }
+    });
 
-    const endpoint = `/pedidos/vendas${queryParams.toString() ? `?${queryParams}` : ''}`
-    return this.makeRequest<BlingOrder[]>(endpoint)
+    const url = queryParams.toString() ? `${endpoint}?${queryParams}` : endpoint;
+    return this.makeRequest<T[]>(url) as Promise<BlingListResponse<T>>;
   }
 
-  async getOrder(id: number): Promise<ApiResponse<BlingOrder>> {
-    return this.makeRequest<BlingOrder>(`/pedidos/vendas/${id}`)
-  }
+  // =====================================================
+  // MÉTODOS DE PEDIDOS
+  // =====================================================
 
-  async updateOrderStatus(id: number, situacaoId: number): Promise<ApiResponse<BlingOrder>> {
-    return this.makeRequest<BlingOrder>(`/pedidos/vendas/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify({
-        situacao: { id: situacaoId }
-      })
-    })
-  }
-
-  // Products Methods
-  async getProducts(params?: {
-    codigo?: string
-    nome?: string
-    situacao?: string
-    categoria?: number
-    pagina?: number
-    limite?: number
-  }): Promise<ApiResponse<BlingProduct[]>> {
-    const queryParams = new URLSearchParams()
+  async getOrders(filters?: BlingOrderFilters): Promise<BlingListResponse<BlingOrder>> {
+    const params: Record<string, any> = {};
     
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined) {
-          queryParams.append(key, value.toString())
-        }
-      })
+    if (filters?.dataInicial) params.dataInicial = formatBlingDate(filters.dataInicial);
+    if (filters?.dataFinal) params.dataFinal = formatBlingDate(filters.dataFinal);
+    if (filters?.situacao) params.situacao = filters.situacao;
+    if (filters?.idSituacao) params.idSituacao = filters.idSituacao;
+    if (filters?.numero) params.numero = filters.numero;
+    if (filters?.idContato) params.idContato = filters.idContato;
+    if (filters?.idVendedor) params.idVendedor = filters.idVendedor;
+    if (filters?.dataAlteracao) params.dataAlteracao = formatBlingDate(filters.dataAlteracao);
+    if (filters?.limite) params.limite = filters.limite;
+    if (filters?.pagina) params.pagina = filters.pagina;
+
+    return this.makeListRequest<BlingOrder>(BLING_ENDPOINTS.ORDERS, params);
+  }
+
+  async getOrder(id: string): Promise<BlingOrder | null> {
+    try {
+      const response = await this.makeRequest<BlingOrder>(`${BLING_ENDPOINTS.ORDERS}/${id}`);
+      return response.data || null;
+    } catch (error) {
+      console.error(`Failed to get order ${id}:`, error);
+      return null;
     }
-
-    const endpoint = `/produtos${queryParams.toString() ? `?${queryParams}` : ''}`
-    return this.makeRequest<BlingProduct[]>(endpoint)
   }
 
-  async getProduct(id: number): Promise<ApiResponse<BlingProduct>> {
-    return this.makeRequest<BlingProduct>(`/produtos/${id}`)
+  async createOrder(orderData: Partial<BlingOrder>): Promise<BlingOrder | null> {
+    try {
+      const response = await this.makeRequest<BlingOrder>(BLING_ENDPOINTS.ORDERS, {
+        method: 'POST',
+        body: JSON.stringify(orderData),
+      });
+      return response.data || null;
+    } catch (error) {
+      console.error('Failed to create order:', error);
+      return null;
+    }
   }
 
-  // Customers Methods
-  async getCustomers(params?: {
-    nome?: string
-    email?: string
-    documento?: string
-    pagina?: number
-    limite?: number
-  }): Promise<ApiResponse<BlingCustomer[]>> {
-    const queryParams = new URLSearchParams()
+  async updateOrder(id: string, orderData: Partial<BlingOrder>): Promise<BlingOrder | null> {
+    try {
+      const response = await this.makeRequest<BlingOrder>(`${BLING_ENDPOINTS.ORDERS}/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(orderData),
+      });
+      return response.data || null;
+    } catch (error) {
+      console.error(`Failed to update order ${id}:`, error);
+      return null;
+    }
+  }
+
+  async deleteOrder(id: string): Promise<boolean> {
+    try {
+      await this.makeRequest(`${BLING_ENDPOINTS.ORDERS}/${id}`, {
+        method: 'DELETE',
+      });
+      return true;
+    } catch (error) {
+      console.error(`Failed to delete order ${id}:`, error);
+      return false;
+    }
+  }
+
+  async getOrdersByDateRange(startDate: string, endDate: string): Promise<BlingOrder[]> {
+    const response = await this.getOrders({
+      dataInicial: startDate,
+      dataFinal: endDate,
+      limite: 100
+    });
+    return response.data || [];
+  }
+
+  async updateOrderStatus(id: string, situacaoId: number): Promise<BlingOrder | null> {
+    return this.updateOrder(id, {
+      situacao: { id: situacaoId }
+    });
+  }
+
+  // =====================================================
+  // MÉTODOS DE PRODUTOS
+  // =====================================================
+
+  async getProducts(filters?: BlingProductFilters): Promise<BlingListResponse<BlingProduct>> {
+    const params: Record<string, any> = {};
     
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined) {
-          queryParams.append(key, value.toString())
-        }
-      })
+    if (filters?.codigo) params.codigo = filters.codigo;
+    if (filters?.nome) params.nome = filters.nome;
+    if (filters?.tipo) params.tipo = filters.tipo;
+    if (filters?.situacao) params.situacao = filters.situacao;
+    if (filters?.formato) params.formato = filters.formato;
+    if (filters?.dataInclusao) params.dataInclusao = formatBlingDate(filters.dataInclusao);
+    if (filters?.dataAlteracao) params.dataAlteracao = formatBlingDate(filters.dataAlteracao);
+    if (filters?.limite) params.limite = filters.limite;
+    if (filters?.pagina) params.pagina = filters.pagina;
+
+    return this.makeListRequest<BlingProduct>(BLING_ENDPOINTS.PRODUCTS, params);
+  }
+
+  async getProduct(id: string): Promise<BlingProduct | null> {
+    try {
+      const response = await this.makeRequest<BlingProduct>(`${BLING_ENDPOINTS.PRODUCTS}/${id}`);
+      return response.data || null;
+    } catch (error) {
+      console.error(`Failed to get product ${id}:`, error);
+      return null;
     }
-
-    const endpoint = `/contatos${queryParams.toString() ? `?${queryParams}` : ''}`
-    return this.makeRequest<BlingCustomer[]>(endpoint)
   }
 
-  async getCustomer(id: number): Promise<ApiResponse<BlingCustomer>> {
-    return this.makeRequest<BlingCustomer>(`/contatos/${id}`)
+  async createProduct(productData: Partial<BlingProduct>): Promise<BlingProduct | null> {
+    try {
+      const response = await this.makeRequest<BlingProduct>(BLING_ENDPOINTS.PRODUCTS, {
+        method: 'POST',
+        body: JSON.stringify(productData),
+      });
+      return response.data || null;
+    } catch (error) {
+      console.error('Failed to create product:', error);
+      return null;
+    }
   }
 
-  // Sync Methods
-  async syncOrders(companyId: string, lastSync?: Date): Promise<{
+  async updateProduct(id: string, productData: Partial<BlingProduct>): Promise<BlingProduct | null> {
+    try {
+      const response = await this.makeRequest<BlingProduct>(`${BLING_ENDPOINTS.PRODUCTS}/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(productData),
+      });
+      return response.data || null;
+    } catch (error) {
+      console.error(`Failed to update product ${id}:`, error);
+      return null;
+    }
+  }
+
+  async deleteProduct(id: string): Promise<boolean> {
+    try {
+      await this.makeRequest(`${BLING_ENDPOINTS.PRODUCTS}/${id}`, {
+        method: 'DELETE',
+      });
+      return true;
+    } catch (error) {
+      console.error(`Failed to delete product ${id}:`, error);
+      return false;
+    }
+  }
+
+  // =====================================================
+  // MÉTODOS DE CLIENTES
+  // =====================================================
+
+  async getCustomers(filters?: BlingCustomerFilters): Promise<BlingListResponse<BlingCustomer>> {
+    const params: Record<string, any> = {};
+    
+    if (filters?.nome) params.nome = filters.nome;
+    if (filters?.cpfCnpj) params.cpfCnpj = filters.cpfCnpj;
+    if (filters?.email) params.email = filters.email;
+    if (filters?.situacao) params.situacao = filters.situacao;
+    if (filters?.dataInclusao) params.dataInclusao = formatBlingDate(filters.dataInclusao);
+    if (filters?.dataAlteracao) params.dataAlteracao = formatBlingDate(filters.dataAlteracao);
+    if (filters?.limite) params.limite = filters.limite;
+    if (filters?.pagina) params.pagina = filters.pagina;
+
+    return this.makeListRequest<BlingCustomer>(BLING_ENDPOINTS.CUSTOMERS, params);
+  }
+
+  async getCustomer(id: string): Promise<BlingCustomer | null> {
+    try {
+      const response = await this.makeRequest<BlingCustomer>(`${BLING_ENDPOINTS.CUSTOMERS}/${id}`);
+      return response.data || null;
+    } catch (error) {
+      console.error(`Failed to get customer ${id}:`, error);
+      return null;
+    }
+  }
+
+  async createCustomer(customerData: Partial<BlingCustomer>): Promise<BlingCustomer | null> {
+    try {
+      const response = await this.makeRequest<BlingCustomer>(BLING_ENDPOINTS.CUSTOMERS, {
+        method: 'POST',
+        body: JSON.stringify(customerData),
+      });
+      return response.data || null;
+    } catch (error) {
+      console.error('Failed to create customer:', error);
+      return null;
+    }
+  }
+
+  async updateCustomer(id: string, customerData: Partial<BlingCustomer>): Promise<BlingCustomer | null> {
+    try {
+      const response = await this.makeRequest<BlingCustomer>(`${BLING_ENDPOINTS.CUSTOMERS}/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(customerData),
+      });
+      return response.data || null;
+    } catch (error) {
+      console.error(`Failed to update customer ${id}:`, error);
+      return null;
+    }
+  }
+
+  async deleteCustomer(id: string): Promise<boolean> {
+    try {
+      await this.makeRequest(`${BLING_ENDPOINTS.CUSTOMERS}/${id}`, {
+        method: 'DELETE',
+      });
+      return true;
+    } catch (error) {
+      console.error(`Failed to delete customer ${id}:`, error);
+      return false;
+    }
+  }
+
+  // =====================================================
+  // MÉTODOS DE SINCRONIZAÇÃO
+  // =====================================================
+
+  async syncOrders(options?: BlingSyncOptions): Promise<BlingSyncResult> {
+    const startTime = Date.now();
+    const result: BlingSyncResult = {
+      success: false,
+      totalProcessed: 0,
+      totalSuccess: 0,
+      totalErrors: 0,
+      errors: [],
+      duration: 0,
+      lastSyncDate: new Date().toISOString()
+    };
+
+    try {
+      const filters: BlingOrderFilters = {
+        limite: options?.batchSize || 100,
+        pagina: 1
+      };
+
+      if (options?.dateRange) {
+        filters.dataInicial = options.dateRange.start;
+        filters.dataFinal = options.dateRange.end;
+      }
+
+      let hasMorePages = true;
+      let currentPage = 1;
+
+      while (hasMorePages) {
+        filters.pagina = currentPage;
+        
+        const response = await this.getOrders(filters);
+        const orders = response.data || [];
+        
+        if (orders.length === 0) {
+          hasMorePages = false;
+          break;
+        }
+
+        result.totalProcessed += orders.length;
+
+        // Process each order
+        for (const order of orders) {
+          try {
+            // Here you would implement your order processing logic
+            // For example, save to database, update status, etc.
+            
+            if (options?.onOrderProcessed) {
+              await options.onOrderProcessed(order);
+            }
+            
+            result.totalSuccess++;
+          } catch (error) {
+            result.totalErrors++;
+            result.errors.push({
+              orderId: order.id?.toString() || 'unknown',
+              error: error instanceof Error ? error.message : 'Unknown error'
+            });
+          }
+        }
+
+        // Check if there are more pages
+        if (response.meta && response.meta.totalPages) {
+          hasMorePages = currentPage < response.meta.totalPages;
+        } else {
+          hasMorePages = orders.length === (options?.batchSize || 100);
+        }
+        
+        currentPage++;
+
+        // Respect rate limits
+        if (options?.delayBetweenRequests) {
+          await new Promise(resolve => setTimeout(resolve, options.delayBetweenRequests));
+        }
+      }
+
+      result.success = result.totalErrors === 0;
+      result.duration = Date.now() - startTime;
+
+      return result;
+    } catch (error) {
+      result.duration = Date.now() - startTime;
+      result.errors.push({
+        orderId: 'sync_process',
+        error: error instanceof Error ? error.message : 'Sync process failed'
+      });
+      return result;
+    }
+  }
+
+  async syncProducts(options?: BlingSyncOptions): Promise<BlingSyncResult> {
+    const startTime = Date.now();
+    const result: BlingSyncResult = {
+      success: false,
+      totalProcessed: 0,
+      totalSuccess: 0,
+      totalErrors: 0,
+      errors: [],
+      duration: 0,
+      lastSyncDate: new Date().toISOString()
+    };
+
+    try {
+      const filters: BlingProductFilters = {
+        limite: options?.batchSize || 100,
+        pagina: 1
+      };
+
+      let hasMorePages = true;
+      let currentPage = 1;
+
+      while (hasMorePages) {
+        filters.pagina = currentPage;
+        
+        const response = await this.getProducts(filters);
+        const products = response.data || [];
+        
+        if (products.length === 0) {
+          hasMorePages = false;
+          break;
+        }
+
+        result.totalProcessed += products.length;
+
+        // Process each product
+        for (const product of products) {
+          try {
+            if (options?.onProductProcessed) {
+              await options.onProductProcessed(product);
+            }
+            
+            result.totalSuccess++;
+          } catch (error) {
+            result.totalErrors++;
+            result.errors.push({
+              productId: product.id?.toString() || 'unknown',
+              error: error instanceof Error ? error.message : 'Unknown error'
+            });
+          }
+        }
+
+        hasMorePages = products.length === (options?.batchSize || 100);
+        currentPage++;
+
+        if (options?.delayBetweenRequests) {
+          await new Promise(resolve => setTimeout(resolve, options.delayBetweenRequests));
+        }
+      }
+
+      result.success = result.totalErrors === 0;
+      result.duration = Date.now() - startTime;
+
+      return result;
+    } catch (error) {
+      result.duration = Date.now() - startTime;
+      result.errors.push({
+        productId: 'sync_process',
+        error: error instanceof Error ? error.message : 'Sync process failed'
+      });
+      return result;
+    }
+  }
+
+  async syncCustomers(companyId: string, lastSync?: Date): Promise<{
     success: boolean
     synced: number
     errors: string[]
@@ -282,15 +548,15 @@ export class BlingApiService {
 
       let hasMore = true
       while (hasMore) {
-        const response = await this.getOrders(params)
+        const response = await this.getCustomers(params)
         
         if (response.success && response.data) {
-          for (const order of response.data) {
+          for (const customer of response.data) {
             try {
-              await this.saveOrderToDatabase(order, companyId)
+              await this.saveCustomerToDatabase(customer, companyId)
               synced++
             } catch (error) {
-              errors.push(`Failed to save order ${order.numero}: ${error}`)
+              errors.push(`Failed to save customer ${customer.nome}: ${error}`)
             }
           }
 
@@ -330,7 +596,65 @@ export class BlingApiService {
     // })
   }
 
-  // Webhook Methods
+  private async saveCustomerToDatabase(customer: BlingCustomer, companyId: string): Promise<void> {
+    console.log('Saving customer to database:', customer.nome, 'for company:', companyId)
+  }
+
+  // =====================================================
+  // MÉTODOS DE ESTATÍSTICAS E RELATÓRIOS
+  // =====================================================
+
+  async getStats(dateRange?: { start: string; end: string }): Promise<BlingStats> {
+    try {
+      const filters: BlingOrderFilters = {};
+      
+      if (dateRange) {
+        filters.dataInicial = dateRange.start;
+        filters.dataFinal = dateRange.end;
+      }
+
+      const ordersResponse = await this.getOrders(filters);
+      const orders = ordersResponse.data || [];
+
+      const stats: BlingStats = {
+        totalOrders: orders.length,
+        totalRevenue: 0,
+        averageOrderValue: 0,
+        topProducts: [],
+        ordersByStatus: {},
+        revenueByPeriod: {}
+      };
+
+      // Calculate revenue and order statistics
+      orders.forEach(order => {
+        const orderValue = parseFloat(order.total?.toString() || '0');
+        stats.totalRevenue += orderValue;
+
+        // Count orders by status
+        const status = order.situacao?.valor || 'Unknown';
+        stats.ordersByStatus[status] = (stats.ordersByStatus[status] || 0) + 1;
+      });
+
+      stats.averageOrderValue = stats.totalOrders > 0 ? stats.totalRevenue / stats.totalOrders : 0;
+
+      return stats;
+    } catch (error) {
+      console.error('Failed to get Bling stats:', error);
+      return {
+        totalOrders: 0,
+        totalRevenue: 0,
+        averageOrderValue: 0,
+        topProducts: [],
+        ordersByStatus: {},
+        revenueByPeriod: {}
+      };
+    }
+  }
+
+  // =====================================================
+  // MÉTODOS DE WEBHOOK
+  // =====================================================
+
   async setupWebhook(url: string, events: string[]): Promise<ApiResponse<any>> {
     return this.makeRequest('/webhooks', {
       method: 'POST',
@@ -341,7 +665,22 @@ export class BlingApiService {
     })
   }
 
-  // Utility Methods
+  // =====================================================
+  // MÉTODOS UTILITÁRIOS
+  // =====================================================
+
+  async testConnection(): Promise<boolean> {
+    try {
+      await this.authenticate();
+      // Try to make a simple request to test the connection
+      await this.getOrders({ limite: 1 });
+      return true;
+    } catch (error) {
+      console.error('Bling connection test failed:', error);
+      return false;
+    }
+  }
+
   getOrderStatusColor(status: string): string {
     const statusColors: Record<string, string> = {
       'Em aberto': 'bg-yellow-100 text-yellow-800',
@@ -358,16 +697,43 @@ export class BlingApiService {
   }
 
   getMarketplaceIcon(marketplace?: string): string {
+    if (!marketplace) return '🏪';
+    
     const icons: Record<string, string> = {
+      'mercadolivre': '🟡',
+      'shopee': '🟠',
+      'amazon': '📦',
+      'magalu': '🔵',
+      'americanas': '🔴',
+      'casasbahia': '🟤',
+      'extra': '🟢',
+      'pontofrio': '⚪',
+      'submarino': '🔵',
+      'netshoes': '👟',
+      'dafiti': '👗',
+      'centauro': '⚽',
       'Mercado Livre': '🛒',
       'Shopee': '🛍️',
       'Amazon': '📦',
       'Magazine Luiza': '🏪',
       'Americanas': '🛒',
       'Casas Bahia': '🏠',
-      'Extra': '🛒'
-    }
-    return icons[marketplace || ''] || '🌐'
+      'Extra': '🛒',
+      'default': '🏪'
+    };
+
+    return icons[marketplace.toLowerCase()] || icons[marketplace] || icons.default;
+  }
+
+  // Update configuration
+  updateConfig(newConfig: Partial<BlingConfig>): void {
+    this.config = { ...this.config, ...newConfig };
+  }
+
+  // Get current configuration (without sensitive data)
+  getConfig(): Omit<BlingConfig, 'client_secret' | 'access_token' | 'refresh_token'> {
+    const { client_secret, access_token, refresh_token, ...safeConfig } = this.config;
+    return safeConfig;
   }
 }
 

@@ -85,7 +85,6 @@ import { RoleSelector, RoleDisplay } from '@/components/rbac/role-selector'
 import { RoleManagement } from '@/components/rbac/role-management'
 import { PermissionGuard } from '@/components/rbac/permission-guard'
 import { UserRole, ROLE_DEFINITIONS, TeamMember } from '@/types/rbac'
-import { useAuth } from '@/hooks/use-auth'
 import { UserService } from '@/lib/services/users'
 import { toast } from 'sonner'
 
@@ -112,7 +111,6 @@ interface BulkAction {
 export default function TeamMembersPage() {
   const params = useParams()
   const router = useRouter()
-  const { user: currentUser, hasPermission } = useAuth()
   const teamId = params.id as string
 
   const [team, setTeam] = useState<Team | null>(null)

@@ -34,7 +34,7 @@ export class OrdersService {
   ): Promise<{ data: Order[]; total: number; page: number; limit: number }> {
     try {
       let query = this.supabase
-        .from('projects')
+        .from('orders')
         .select('*', { count: 'exact' })
         .eq('company_id', companyId)
         .order('created_at', { ascending: false });
@@ -120,7 +120,7 @@ export class OrdersService {
   async getOrder(orderId: string): Promise<Order | null> {
     try {
       const { data, error } = await this.supabase
-        .from('projects')
+        .from('orders')
         .select('*')
         .eq('id', orderId)
         .single();
@@ -146,7 +146,7 @@ export class OrdersService {
     try {
       // Buscar todos os pedidos da empresa
       const { data: orders, error } = await this.supabase
-        .from('projects')
+        .from('orders')
         .select('*')
         .eq('company_id', companyId);
 
@@ -252,42 +252,14 @@ export class OrdersService {
 
   async createOrder(companyId: string, orderData: CreateOrderData): Promise<Order> {
     try {
-      // Calcular total dos itens
-      const itemsTotal = orderData.items.reduce((sum, item) => {
-        const itemTotal = item.quantity * item.unit_price;
-        return sum + itemTotal;
-      }, 0);
-
-      // Calcular total final
-      const totalAmount = itemsTotal - (orderData.discount_amount || 0) + (orderData.shipping_amount || 0);
-
-      // Preparar dados para inserção
-      const orderToInsert = {
-        company_id: companyId,
-        order_number: `VNG-${Date.now()}`, // Gerar número temporário
-        customer_name: orderData.customer_name,
-        customer_email: orderData.customer_email,
-        customer_phone: orderData.customer_phone,
-        customer_document: orderData.customer_document,
-        total_amount: totalAmount,
-        discount_amount: orderData.discount_amount || 0,
-        shipping_amount: orderData.shipping_amount || 0,
-        status: 'pending',
-        marketplace: orderData.marketplace,
-        marketplace_order_id: orderData.marketplace_order_id,
-        order_date: new Date().toISOString(),
-        items: orderData.items.map(item => ({
-          ...item,
-          total_price: item.quantity * item.unit_price
-        })),
-        customer_address: orderData.customer_address,
-        notes: orderData.notes,
-        bling_order_id: '', // Será preenchido após sincronização
-      };
-
       const { data, error } = await this.supabase
-        .from('projects')
-        .insert(orderToInsert)
+        .from('orders')
+        .insert({
+          ...orderData,
+          company_id: companyId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
         .select()
         .single();
 
@@ -305,7 +277,7 @@ export class OrdersService {
   async updateOrder(orderId: string, updateData: UpdateOrderData): Promise<Order> {
     try {
       const { data, error } = await this.supabase
-        .from('projects')
+        .from('orders')
         .update({
           ...updateData,
           updated_at: new Date().toISOString()
@@ -328,7 +300,7 @@ export class OrdersService {
   async deleteOrder(orderId: string): Promise<void> {
     try {
       const { error } = await this.supabase
-        .from('projects')
+        .from('orders')
         .delete()
         .eq('id', orderId);
 
@@ -450,27 +422,26 @@ export class OrdersService {
     blingOrder: BlingOrderResponse['data']
   ): Promise<void> {
     try {
+      const orderData = this.convertBlingOrderToInternal(companyId, blingOrder);
+      
       // Verificar se o pedido já existe
       const { data: existingOrder } = await this.supabase
-        .from('projects')
+        .from('orders')
         .select('id')
-        .eq('bling_order_id', blingOrder.id.toString())
+        .eq('bling_order_id', blingOrder.id)
         .eq('company_id', companyId)
         .single();
-
-      // Converter dados do Bling para formato interno
-      const orderData = this.convertBlingOrderToInternal(companyId, blingOrder);
 
       if (existingOrder) {
         // Atualizar pedido existente
         await this.supabase
-          .from('projects')
+          .from('orders')
           .update(orderData)
           .eq('id', existingOrder.id);
       } else {
         // Criar novo pedido
         await this.supabase
-          .from('projects')
+          .from('orders')
           .insert(orderData);
       }
     } catch (error) {
@@ -556,9 +527,9 @@ export class OrdersService {
         };
       }
 
-      const { data: ordersCount } = await this.supabase
-        .from('projects')
-        .select('id', { count: 'exact' })
+      const { count } = await this.supabase
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
         .eq('company_id', companyId);
 
       return {
@@ -566,7 +537,7 @@ export class OrdersService {
         last_sync: blingConfig.last_sync,
         sync_errors: blingConfig.sync_errors || [],
         pending_sync: 0, // Implementar lógica se necessário
-        total_synced: ordersCount?.length || 0
+        total_synced: count || 0
       };
     } catch (error) {
       console.error('Erro ao buscar status de sincronização:', error);
@@ -581,7 +552,7 @@ export class OrdersService {
   async getMarketplaces(companyId: string): Promise<string[]> {
     try {
       const { data, error } = await this.supabase
-        .from('projects')
+        .from('orders')
         .select('marketplace')
         .eq('company_id', companyId)
         .not('marketplace', 'is', null);
@@ -604,7 +575,7 @@ export class OrdersService {
   async getRecentOrders(companyId: string, limit = 10): Promise<Order[]> {
     try {
       const { data, error } = await this.supabase
-        .from('projects')
+        .from('orders')
         .select('*')
         .eq('company_id', companyId)
         .order('created_at', { ascending: false })

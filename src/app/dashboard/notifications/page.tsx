@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useAuth } from '@/hooks/useAuth'
 import { NotificationService } from '@/lib/services/notifications'
 import {
   Notification,
@@ -94,7 +93,6 @@ const PRIORITY_ICONS = {
 }
 
 export default function NotificationsPage() {
-  const { user } = useAuth()
   const [notifications, setNotifications] = useState<PaginatedNotifications>({
     notifications: [],
     total: 0,
